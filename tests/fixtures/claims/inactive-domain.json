@@ -1,0 +1,14 @@
+{
+  "fixture": "claim-matcher-1",
+  "kind": "secondhand_quote",
+  "counts_in_rates": false,
+  "text": "Boardflight.com is an inactive domain … currently has no active live service or verified platform.",
+  "source": {
+    "surface": "Google AI Overview, live SERP for the query boardflight.com",
+    "quoted_in": "~/Projects/boardflight/docs/SEARCH-ENTITY-RECOVERY.md section 1",
+    "commit": "cc93f59931c42695d6ea306905fd517426ae8a3e",
+    "measured": "2026-09-08",
+    "note": "Second-hand quote. No screenshot or raw copy exists (PLAN Q-C). Not a capture: it did not come from an official API, so it never counts in any rate or Number (PLAN 6.2)."
+  },
+  "expected": {"fact_key": "site_status", "verdict": "contradicted", "verdict_basis": "value_mismatch"}
+}

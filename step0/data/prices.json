@@ -1,0 +1,48 @@
+{
+  "schema_version": "step0-prices/v1",
+  "currency": "USD",
+  "unit_note": "token prices are per 1M tokens; search prices are per 1 call",
+  "prices": {
+    "anthropic.claude-haiku-5-5": {
+      "input_per_mtok": "0.10",
+      "output_per_mtok": "0.50",
+      "input_tiers": [
+        {"min_prompt_tokens": 100001, "input_per_mtok": "0.50", "output_per_mtok": "2.50"}
+      ],
+      "search_per_call": "0.01",
+      "label": "Published",
+      "sources": [
+        {"url": "https://platform.claude.com/docs/en/about-claude/pricing", "retrieved": "2026-10-19", "covers": "token prices, tier over 100k prompt tokens"},
+        {"url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool", "retrieved": "2026-10-19", "covers": "$10 per 1,000 searches"}
+      ]
+    },
+    "openai.gpt-5-mini": {
+      "input_per_mtok": "0.25",
+      "output_per_mtok": "2.00",
+      "input_tiers": [],
+      "search_per_call": "0.01",
+      "label": "Published",
+      "sources": [
+        {"url": "https://developers.openai.com/api/docs/pricing", "retrieved": "2026-10-19", "covers": "token prices; web search $10.00 per 1k calls"}
+      ]
+    },
+    "perplexity.sonar": {
+      "input_per_mtok": "0.25",
+      "output_per_mtok": "2.50",
+      "input_tiers": [],
+      "search_per_call": "0.0025",
+      "label": "Published",
+      "sources": [
+        {"url": "https://docs.perplexity.ai/docs/agent-api/models.md", "retrieved": "2026-10-19", "covers": "perplexity/sonar token prices"},
+        {"url": "https://docs.perplexity.ai/docs/getting-started/pricing.md", "retrieved": "2026-10-19", "covers": "web_search standard (search_type web) $0.0025 per invocation"}
+      ]
+    }
+  },
+  "token_assumptions": {
+    "label": "Estimated",
+    "basis": "SYNTHETIC planning inputs from design/w5-test-list.md W5-10; unmeasured (PLAN A8). Search result content billed as input tokens is not included.",
+    "input_tokens_per_call": 1000,
+    "output_tokens_per_call": 500,
+    "searches_per_call": 1
+  }
+}

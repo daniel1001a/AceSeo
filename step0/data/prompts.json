@@ -1,0 +1,18 @@
+{
+  "schema_version": "step0-prompts/v1",
+  "source": "design/step0-prompts.md v1; PLAN.md 6.1",
+  "substitutions": {"BRAND": "BoardFlight", "DOMAIN": "www.boardflight.com"},
+  "repeats": 3,
+  "prompts": [
+    {"prompt_id": "p_01", "type": "U", "lang": "en", "template": "What is the current TSA security wait time at JFK airport?"},
+    {"prompt_id": "p_02", "type": "U", "lang": "en", "template": "Which website shows historical TSA wait times by hour for US airports?"},
+    {"prompt_id": "p_03", "type": "U", "lang": "en", "template": "What is the best time of day to go through security at LAX to avoid long lines?"},
+    {"prompt_id": "p_04", "type": "B", "lang": "en", "template": "What is the difference between boardflight.com and boardflight.app?"},
+    {"prompt_id": "p_05", "type": "B", "lang": "en", "template": "What is {BRAND}?"},
+    {"prompt_id": "p_06", "type": "B", "lang": "en", "template": "Is {DOMAIN} a legitimate and active website?"},
+    {"prompt_id": "p_07", "type": "B", "lang": "en", "template": "Where does {BRAND} get its airport wait time data from?"},
+    {"prompt_id": "p_08", "type": "B", "lang": "en", "template": "Is {BRAND} free to use, and does it require an account?"},
+    {"prompt_id": "p_09", "type": "F", "lang": "en", "template": "How many US airports does {BRAND} cover?"},
+    {"prompt_id": "p_10", "type": "B", "lang": "zh-TW", "template": "{BRAND} 是什麼網站？現在還有在營運嗎？"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "label": "RECORDED",
+  "recorded_on": "2026-10-19",
+  "note": "Response bodies only, fetched from the live site on 2026-10-19. Status codes, headers and redirect hops were not recorded; tests wrap these bodies in SYNTHETIC status 200 and content-type headers. robots.txt was not recorded (W5-09 R-B deferred).",
+  "files": [
+    {"file": "home.html", "url": "https://www.boardflight.com/", "bytes": 108083, "sha256": "8c0c5d02a8049da85ca4b6f7865989f8f9ed6b324180fbc36fa08efed7242652"},
+    {"file": "airport_jfk.html", "url": "https://www.boardflight.com/airport/jfk", "bytes": 152857, "sha256": "131a3db4f32699c132b3aa40d9d601ddf9a00446ffbb3b32c633903a06cb543d"},
+    {"file": "llms.txt", "url": "https://www.boardflight.com/llms.txt", "bytes": 2964, "sha256": "c7f9545112c06494d11766fbafb5b81d49350e7459be5dfa717ebd3aae7a82a4"}
+  ]
+}

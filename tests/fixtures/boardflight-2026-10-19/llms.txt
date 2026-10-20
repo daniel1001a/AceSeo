@@ -1,0 +1,33 @@
+# BoardFlight
+
+> BoardFlight turns a US flight number into one arrive-by time: when to get to the airport, built for that airport, terminal and hour. It is not boarding time. Free, no account. Covers 33 US airports.
+
+BoardFlight looks up the flight, then adds curb-to-check-in time, bag drop if you have a bag, a modeled security wait for that airport and hour (read at the 88th percentile, so it plans for a slower-than-usual day), and the walk to the gate. It uses no live queue data. Airline check-in and boarding deadlines always come first.
+
+Security-wait curves are checked against TSA's published hourly checkpoint throughput. The check covers the shape of each airport's day (when it peaks), not exact minutes. Airport-page charts pass that check at 16 of 33 airports: AUS, BNA, BOS, DCA, EWR, HNL, JFK, LAS, LAX, LGA, PHX, SAN, SEA, SFO, SNA and TPA. Pages for the other airports give arrive-by guidance but no hour-by-hour wait figures.
+
+## Main pages
+- [Check a flight](https://www.boardflight.com/): enter a flight number, get one arrive-by time
+- [Airports](https://www.boardflight.com/airports): all 33 airport profiles
+- [How it works](https://www.boardflight.com/how-it-works): what goes into the time, and why not just "two hours early"
+- [Methodology](https://www.boardflight.com/methodology): the model, the TSA check and what it does and doesn't prove
+- [Boarding time vs. arrive-by time](https://www.boardflight.com/guides/boarding-time): when boarding starts and ends at major US airlines, from their own pages
+- [Data study](https://www.boardflight.com/data): when security is quietest and busiest at 8 airports
+
+## Data study (8 airports, modeled medians for Thu, Aug 13, 2026)
+Shown only for airports where both BoardFlight curves passed the TSA check. Each airport is compared only with itself.
+- Austin Bergstrom International (AUS): the shortest waits of the day come around 7 PM; worst about 23 min at 4 PM
+- Boston Logan International (BOS): the shortest waits of the day come around 10 PM; worst about 15 min at 6:45 PM
+- John F. Kennedy International (JFK): quietest about 13 min near 5 AM; worst about 30 min at 6 AM
+- John Wayne Orange County International (SNA): the shortest waits of the day come around 9 PM; worst about 15 min at 6 AM
+- Nashville International (BNA): the shortest waits of the day come around 9:45 PM; worst about 10 min at 12 PM
+- Ronald Reagan Washington National (DCA): the shortest waits of the day come around 10 PM; worst about 20 min at 7 AM
+- San Diego International (SAN): quietest about 5 min near 10 PM; worst about 39 min at 9 AM
+- Tampa International (TPA): the shortest waits of the day come around 10 PM; worst about 29 min at 6 AM
+- 6 AM is the worst weekday hour at 3 of 8 of these airports.
+
+## Open data
+- Dataset: https://github.com/daniel1001a/boardflight-airport-wait-data (12 airports, CC BY 4.0). Cite as "BoardFlight airport security wait data".
+
+## Contact
+- contact@boardflight.com

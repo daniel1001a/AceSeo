@@ -1,0 +1,102 @@
+{
+  "schema_version": "step0-engines/v1",
+  "engines": [
+    {
+      "engine": "anthropic",
+      "enabled": true,
+      "opt_in": false,
+      "model": "claude-haiku-5-5",
+      "model_vendor": "anthropic",
+      "price_key": "anthropic.claude-haiku-5-5",
+      "terms_status": "verified-allowed",
+      "terms_url": "https://www.anthropic.com/legal/commercial-terms",
+      "terms_last_updated": "2025-06-17",
+      "terms_retrieved": "2026-10-19",
+      "terms_note": "research/w1-api-terms.md 2.2",
+      "request_shape": {
+        "status": "verified",
+        "builder": "anthropic_messages_v1",
+        "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool",
+        "retrieved": "2026-10-19",
+        "method": "POST",
+        "endpoint": "https://api.anthropic.com/v1/messages",
+        "headers": {"anthropic-version": "2023-06-01", "content-type": "application/json"},
+        "auth_header": "x-api-key",
+        "tool_version": "web_search_20250305",
+        "max_tokens": 1024,
+        "max_searches_per_call": 3
+      }
+    },
+    {
+      "engine": "openai",
+      "enabled": true,
+      "opt_in": false,
+      "model": "gpt-5-mini",
+      "model_vendor": "openai",
+      "price_key": "openai.gpt-5-mini",
+      "terms_status": "verified-allowed",
+      "terms_url": "https://openai.com/policies/services-agreement/",
+      "terms_last_updated": "2025-12-01",
+      "terms_retrieved": "2026-10-19",
+      "terms_note": "research/w1-api-terms.md 2.1",
+      "request_shape": {
+        "status": "verified",
+        "builder": "openai_responses_v1",
+        "source_url": "https://developers.openai.com/api/docs/guides/tools-web-search",
+        "retrieved": "2026-10-19",
+        "method": "POST",
+        "endpoint": "https://api.openai.com/v1/responses",
+        "headers": {"Content-Type": "application/json"},
+        "auth_header": "Authorization",
+        "tool_version": "web_search",
+        "max_searches_per_call": null
+      }
+    },
+    {
+      "engine": "perplexity",
+      "enabled": true,
+      "opt_in": true,
+      "model": "perplexity/sonar",
+      "model_vendor": "perplexity",
+      "price_key": "perplexity.sonar",
+      "terms_status": "verified-allowed",
+      "terms_url": "https://www.perplexity.ai/hub/legal/perplexity-api-terms-of-service",
+      "terms_last_updated": "2026-01-23",
+      "terms_retrieved": "2026-10-19",
+      "terms_note": "research/w1-api-terms.md 2.3; AUP caveat A2, opt-in only",
+      "request_shape": {
+        "status": "verified",
+        "builder": "perplexity_agent_v1",
+        "source_url": "https://docs.perplexity.ai/docs/agent-api/tools/web-search.md",
+        "retrieved": "2026-10-19",
+        "method": "POST",
+        "endpoint": "https://api.perplexity.ai/v1/agent",
+        "headers": {"Content-Type": "application/json"},
+        "auth_header": "Authorization",
+        "tool_version": "web_search",
+        "search_type": "web",
+        "max_output_tokens": 1024,
+        "max_searches_per_call": null
+      }
+    },
+    {
+      "engine": "xai",
+      "enabled": false,
+      "opt_in": true,
+      "model": null,
+      "model_vendor": "xai",
+      "price_key": null,
+      "terms_status": "unverified",
+      "terms_url": "https://x.ai/legal/acceptable-use-policy",
+      "terms_last_updated": "2026-08-14",
+      "terms_retrieved": "2026-10-19",
+      "terms_note": "research/w1-api-terms.md: AUP bans harvesting Input or Output; undefined for storage",
+      "request_shape": {
+        "status": "unverified",
+        "builder": null,
+        "source_url": null,
+        "retrieved": null
+      }
+    }
+  ]
+}
