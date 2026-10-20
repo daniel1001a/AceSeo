@@ -1,0 +1,1 @@
+{"max_tokens":1024,"messages":[{"content":"Which website shows historical TSA wait times by hour for US airports?","role":"user"}],"model":"claude-haiku-5-5","tools":[{"max_uses":3,"name":"web_search","type":"web_search_20250305"}]}

@@ -212,7 +212,7 @@ class W502TermsGate(TmpRunCase):
 
 class W510Cost(unittest.TestCase):
     def test_estimates(self):
-        doc, prices = fx.engines_doc(), fx.load("prices.json")
+        doc, prices = fx.engines_doc(), fx.w5_10_prices()
         expected = {"openai": "0.01125", "anthropic": "0.01035", "perplexity": "0.004"}
         for name, value in expected.items():
             e = fx.engine_entry(doc, name)
@@ -233,6 +233,14 @@ class W510Cost(unittest.TestCase):
         self.assertEqual((detail["upper_usd"], detail["upper_basis"]), ("0.01125", cost.SEARCH_BASIS_ASSUMED))
         self.assertEqual(cost.planned_searches(None), (1, cost.SEARCH_BASIS_ASSUMED))
         self.assertEqual(cost.planned_searches(3), (3, cost.SEARCH_BASIS_DOCUMENTED))
+
+    def test_upper_never_below_expected_searches(self):
+        # Shipped assumptions (first live run): 2 searches per call, above openai's assumed cap of 1.
+        doc, prices = fx.engines_doc(), fx.load("prices.json")
+        snap, _ = config.engine_snapshot(fx.engine_entry(doc, "openai"), prices)
+        d, detail = cost.cost_estimate(snap["price_snapshot"], None, prices["token_assumptions"])
+        self.assertEqual((detail["upper_searches"], detail["upper_basis"]), (2, cost.SEARCH_BASIS_EXPECTED))
+        self.assertEqual(detail["upper_usd"], cost.dec_str(d))
 
 
 def _window(recs):
@@ -320,6 +328,14 @@ class W505NumberRule(TmpRunCase):
         text = render.render_text(Report(Text("Report"), (Block(Text("Rate"), (ins,)),)), self.index)
         self.assertIn("insufficient evidence (n=2, minimum 3)", text)
         self.assertIn("- insufficient: citation_rate.engine_prompt", text)
+
+    def test_not_checked_groups_repeated_insufficient(self):
+        ins = [number.build("citation_rate.engine_prompt", "rate", 1, self.ids[:2], self.hits[:1], (),
+                            self.window, scope=_scope()) for _ in range(3)]
+        text = render.render_text(Report(Text("Report"), (Block(Text("Rate"), tuple(ins)),)), self.index)
+        not_checked = text.split("## Not checked", 1)[1]
+        self.assertEqual(not_checked.count("- insufficient: citation_rate.engine_prompt"), 1)
+        self.assertIn("(n=2, minimum 3) x3, listed under Measurements", not_checked)
 
 
 class W504FailedExcludedAndExposed(TmpRunCase):

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "site": {
+    "name": "Example Co",
+    "canonical_origin": "https://www.example.com",
+    "hosts": ["example.com", "www.example.com"]
+  },
+  "facts": [
+    {"key": "jsonld.organization.same_as", "value": ["https://github.com/example"], "value_type": "string_list"},
+    {"key": "llms.offer.is_free", "value": true, "value_type": "boolean"},
+    {"key": "site_status", "value": "live", "value_type": "enum"}
+  ]
+}

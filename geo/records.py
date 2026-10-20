@@ -14,11 +14,21 @@ CAPTURE_STATUSES = ("ok", "failed", "refused")
 #               partial text is kept but never counted as ok.
 #   tool_error  a 200 whose web search tool reported an error in the body
 #               (anthropic web_search_tool_result_error, documented).
+#   quota_exhausted  the account has no credit left (openai HTTP 429 with error
+#               type insufficient_quota, seen in run_20261020T142935Z_74e3cd).
+#               Not a rate limit: it is not retried, and the engine's remaining
+#               slots are skipped with the same reason.
 ERROR_CLASSES = ("timeout", "connection", "http_error", "rate_limited", "parse_error", "empty_answer",
-                 "incomplete", "tool_error")
+                 "incomplete", "tool_error", "quota_exhausted")
 NULL_RAW_ERROR_CLASSES = ("timeout", "connection")
-SKIP_REASONS = ("budget_cap", "user_abort", "terms_gate")
+SKIP_REASONS = ("budget_cap", "user_abort", "terms_gate", "quota_exhausted")
 TRANSPORTS = ("live", "fixture")
+# Manual import (geo/manual.py): a person copied an answer from a surface with no
+# API (for example Google AI Overviews). It lives in its own run_kind "manual"
+# with transport "manual", is never sent, priced or counted in rates.
+MANUAL = "manual"
+ACCESS = ("api", MANUAL)
+ATTACHMENT_ROLES = ("screenshot",)
 
 
 def plan_sha256(engines, prompts_sha256, repeats, key_pages, thresholds):
@@ -31,7 +41,10 @@ def new_manifest(*, started_at, engines, engines_excluded, opt_in_selected, inpu
                  max_attempts, key_pages, key_content, mention_terms, thresholds, planned_slots,
                  cap_usd, transport, run_kind="collect", source_run_ids=()):
     """input_hashes: {"prompts_sha256", "facts_sha256", "sources_sha256"}."""
-    if transport not in TRANSPORTS:
+    if run_kind == MANUAL:
+        if transport != MANUAL:
+            raise ValueError("a manual run has transport manual")
+    elif transport not in TRANSPORTS:
         raise ValueError("transport must be live or fixture")
     key_pages = sorted(ids.url_norm_v1(u) for u in key_pages)
     run_id = ids.make_run_id(
@@ -74,8 +87,10 @@ def _finish(record, slug):
 
 def capture(manifest, snapshot, prompt, repeat_index, attempt, *, started_at, completed_at, status,
             request_sha256, raw_sha256, raw_path, answer_text, citations, cost_estimate_usd,
-            error_class=None, http_status=None, usage=None, search_observed=None, created_at=None):
-    """prompt: {prompt_id, text, prompt_sha256} from inputs/prompts.json."""
+            error_class=None, http_status=None, usage=None, search_observed=None, created_at=None,
+            access="api", attachments=()):
+    """prompt: {prompt_id, text, prompt_sha256} from inputs/prompts.json.
+    attachments: [{role, raw_sha256, raw_path}], manual captures only."""
     rec = {
         "kind": "capture",
         "schema_version": SCHEMA_VERSION,
@@ -105,6 +120,8 @@ def capture(manifest, snapshot, prompt, repeat_index, attempt, *, started_at, co
         "cost_billed_usd": None,
         "cost_billed_field": None,
         "search_observed": search_observed,
+        "access": access,
+        "attachments": [dict(a) for a in attachments],
     }
     if usage is not None:
         d = cost.cost_from_usage(snapshot["price_snapshot"], usage)

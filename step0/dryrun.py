@@ -72,7 +72,7 @@ def _print_summary(plan, out):
     print("total  %s USD (Estimated tokens, Published prices), cap %s: %s" % (
         est["total_usd"], est["cap_usd"], est["status"]), file=out)
     if est["search_fee_unbounded_engines"]:
-        print("note   no documented per-call search cap for: %s; the cap check assumes %d search per call" % (
+        print("note   no documented per-call search cap for: %s; the cap check assumes %d search(es) per call" % (
             ", ".join(est["search_fee_unbounded_engines"]),
             est["token_assumptions"]["searches_per_call"]), file=out)
     print("sent   0 requests (dry run; no network, no API keys read)", file=out)

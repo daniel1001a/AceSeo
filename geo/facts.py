@@ -556,6 +556,42 @@ def facts_by_key(doc):
     return {f["key"]: f for f in doc["facts"]}
 
 
+# Fact keys the rule matcher (geo/claims.py TOPICS) compares answers against.
+# Any other key is kept in the run's facts snapshot but no claim refers to it.
+MATCHED_KEYS = ("jsonld.organization.same_as", "llms.coverage.airport_count", "llms.data.uses_live_queue_data",
+                "llms.offer.is_free", "site_status")
+
+
+def runtime_problems(doc):
+    """What collect and import-manual need from a facts file, as a list of messages.
+
+    This is not validate_facts: it does not check sources or snapshots. It only
+    refuses files the matcher cannot read (site.name, site.hosts, and a facts
+    list of {key, value} with unique keys)."""
+    out = []
+    if not isinstance(doc, dict):
+        return ["the facts file must be a JSON object"]
+    site = doc.get("site")
+    if not isinstance(site, dict) or not isinstance(site.get("name"), str) or not site.get("name"):
+        out.append("site.name must be the brand name, e.g. \"Example Co\"")
+    elif not isinstance(site.get("hosts"), list) or not site["hosts"] or \
+            not all(isinstance(h, str) and h for h in site["hosts"]):
+        out.append("site.hosts must list the site's hostnames, e.g. [\"example.com\", \"www.example.com\"]")
+    facts = doc.get("facts")
+    if not isinstance(facts, list):
+        return out + ["facts must be a list of {\"key\": ..., \"value\": ...}"]
+    keys = []
+    for i, f in enumerate(facts):
+        if not isinstance(f, dict) or not isinstance(f.get("key"), str) or "value" not in f:
+            out.append("facts[%d] needs a string key and a value" % i)
+        else:
+            keys.append(f["key"])
+    dup = sorted({k for k in keys if keys.count(k) > 1})
+    if dup:
+        out.append("duplicate fact keys: %s" % ", ".join(dup))
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Minimal BoardFlight loader (PLAN 5.6.1)
 

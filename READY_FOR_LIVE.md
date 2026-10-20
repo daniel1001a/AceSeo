@@ -1,10 +1,15 @@
 # Ready for live: pre-flight checklist
 
-Everything up to this point has run offline, with SYNTHETIC provider bodies
-and fake keys (PROGRESS.md Steps 1 to 7). This file is what to check before
-the first real `--live` run, which sends real HTTP requests and spends real
-money. Nothing in this repo reads a real key or sends a real request unless
-`--live` is passed explicitly on the command line.
+Everything so far has run offline, with SYNTHETIC provider bodies and fake
+keys. This file lists what to check before the first real `--live` run, which
+sends real HTTP requests and spends real money. Nothing in this repo reads a
+real key or sends a real request unless `--live` is passed on the command line.
+
+Status (2026-10-20): first live run done, `run_20261020T142935Z_74e3cd`
+(`--repeats 1`). Anthropic answered 10 of 10. OpenAI refused every request
+with HTTP 429 `insufficient_quota` (the account had no credit), so no OpenAI
+answer has been recorded. Fixtures are in `tests/fixtures/live/`. Results and
+the changes they caused are in PROGRESS.md Step 13.
 
 ## 1. Environment variables
 
@@ -12,66 +17,96 @@ money. Nothing in this repo reads a real key or sends a real request unless
 that pass the terms gate (`terms_status` in step0/data/engines.json), and
 only when `--live` is given:
 
-| Engine | Environment variable |
-|---|---|
-| anthropic | `ANTHROPIC_API_KEY` |
-| openai | `OPENAI_API_KEY` |
+| Engine | Environment variable | Called by default |
+|---|---|---|
+| anthropic | `ANTHROPIC_API_KEY` | yes |
+| openai | `OPENAI_API_KEY` | yes |
+| perplexity | `PERPLEXITY_API_KEY` | only with `--opt-in perplexity` |
 
-perplexity and xai have no entry in `KEY_ENV` (`geo/cli.py`): xai's
-`terms_status` is `unverified` (its request shape is also unverified, so it
-cannot be sent at all) and perplexity requires `--opt-in perplexity` even
-once verified-allowed. Do not add either to the first live run.
+xai has no entry in `KEY_ENV`: its `terms_status` and request shape are
+`unverified`, so the terms gate skips it. If a required key is missing,
+`--live` refuses before writing anything and names the variable.
 
-## 2. Estimated cost (dry run, SYNTHETIC token assumptions)
+## 2. Estimated cost (dry run)
 
-Computed by `collect.collect(send=False)` against the real
-`step0/data/{engines,prices}.json`, engines anthropic + openai only (xai and
-perplexity skipped by the terms gate), `max_attempts=2`:
+From `python3 -m geo.cli collect --cap-usd 1 --mention-term BoardFlight
+--repeats N` against the real `step0/data/{engines,prices}.json`, engines
+anthropic + openai:
 
-| Sendable slots | Prompts x repeats x engines | First-attempt estimate | Upper bound (with one retry each) |
+| Sendable slots | Prompts x repeats x engines | First attempts, expected | First attempts, upper search bound |
 |---|---|---|---|
-| 60 | 10 x 3 x 2 | $0.648 | $1.248 |
-| 90 | 9 x 5 x 2 | $0.972 | $1.872 |
+| 20 | 10 x 1 x 2 | $0.497 | $0.597 |
+| 60 | 10 x 3 x 2 | $1.491 | $1.791 |
 
-These numbers carry the "Estimated" label from `geo/cost.py`: token counts
-per call (1000 in, 500 out, 1 search) are planning assumptions
-(`step0/data/prices.json: token_assumptions`, PLAN A8), not measured from a
-real call. Real cost can differ once real answers come back. `--cap-usd`
-refuses to send if the first-attempt estimate exceeds it; it does not cap
-the upper bound, so leave headroom for retries.
+Both columns are Estimated (`geo/cost.py`). The per-call token counts
+(22000 in, 800 out) and the search count (2) in
+`step0/data/prices.json: token_assumptions` are the rounded-up means of the
+ten Anthropic answers in the first live run; OpenAI's are not measured yet.
+The old assumptions (1000 in, 500 out, 1 search) gave $0.1035 for those ten
+calls against $0.1958 computed from their reported usage. The upper column
+uses the documented maximum searches per call for anthropic (3), and never
+less than the expected count for openai. Neither column includes retries: with
+`--max-attempts 2` a failed slot is sent once more. `--cap-usd` refuses to
+start if the expected first-attempt estimate exceeds it, and the collector
+skips further slots once the running Estimated spend would pass the cap.
 
-## 3. How to start with `--live`
+## 3. Running live
 
 ```
 export ANTHROPIC_API_KEY=...
 export OPENAI_API_KEY=...
 python3 -m geo.cli collect \
-  --cap-usd 1 \
+  --cap-usd 1 --repeats 1 \
   --mention-term BoardFlight --mention-term boardflight.com \
   --key-page https://www.boardflight.com/ \
-  --repeats 1 \
+  --key-page https://www.boardflight.com/airport/jfk \
+  --key-page https://www.boardflight.com/llms.txt \
+  --report-out runs/first-live-report.md \
   --live
 ```
 
-Without `--live` (the default) the same command only prints the dry-run plan
-and writes nothing. `--live` builds the plan first, refuses if any required
-key is missing from the environment, refuses if the estimate exceeds
-`--cap-usd`, and only then opens `UrllibTransport` and writes a run
-directory under `--out` (default `runs/`).
+Run it once without `--live` first: the dry run prints the engines, slots and
+Estimated cost, and writes nothing.
 
-After a live run finishes, render its decision with:
+`--live` runs `pipeline.run_live`, the same stages as the offline pipeline:
+
+1. page checks on each `--key-page` through `geo/fetch.py: UrllibFetcher`
+   (plain GET, no cookies, redirects recorded hop by hop, bodies cut at 5 MiB
+   with an `x-geo-evidence-truncated` header),
+2. captures through `collect.UrllibTransport`, with one progress line per
+   attempt on stderr,
+3. claims from the rule matcher,
+4. the decision,
+5. the report, printed to stdout or written to `--report-out`.
+
+The run is validated after each stage. The run directory path is printed to
+stderr at the end. `python3 -m geo.cli report RUN_DIR` re-renders it later,
+and `python3 -m geo.cli ledger RUN_DIR` lists every capture and claim.
+
+## 4. Recording fixtures from the first run
 
 ```
-python3 -m geo.cli report RUN_DIR
+python3 -m geo.cli export-fixtures runs/<run_id>
 ```
 
-This reads no key and sends nothing; it refuses (exit code 2) if the run
-does not validate or has no decision yet.
+This writes `tests/fixtures/live/<engine>/<sha256>.json` and `index.json`.
+Identifier fields (`id`, `user`, `safety_identifier`, `prompt_cache_key`,
+`metadata`, `previous_response_id`) are replaced with `"redacted"`, and the
+export refuses if that changes how the adapter parses a body. Read every file
+before committing. `tests/test_live_fixtures.py` then replays them on every
+test run. It skips while `index.json` is absent.
 
-## 4. Fields still labelled unverified or Estimated
+Done for the first run. The redaction leaves `encrypted_content`, `signature`
+and `tool_use_id` in the Anthropic bodies: opaque provider values, not account
+identifiers, but check you are comfortable publishing them. The OpenAI entries
+in `index.json` were edited by hand to expect `quota_exhausted`, because the
+run itself recorded the old `rate_limited`; a fresh export of that run would
+refuse. `FIELD_STATUS` marks every Anthropic field seen in the run as `live`.
 
-These are not blockers; they are things the first live run's output will
-still carry as caveats, and the report and manifest say so:
+## 5. Fields still labelled unverified or Estimated
+
+These are not blockers. The first live run's output will still carry them as
+caveats, and the report and manifest say so:
 
 - `crawler_token_status: "unverified"` on every AI-crawler robots.txt check
   except the wildcard `*` rule (`geo/pagechecks.py`). The crawler token list
@@ -80,34 +115,32 @@ still carry as caveats, and the report and manifest say so:
 - `xai.terms_status = "unverified"` and `xai.request_shape.status =
   "unverified"` in `step0/data/engines.json`. xai is excluded from every run
   until both are resolved.
-- Every per-call cost estimate carries `label: "Estimated"`
-  (`geo/cost.py`): the token and search-count assumptions are planning
-  inputs, not measured. Prices themselves are `label: "Published"` with a
-  cited source URL, retrieved 2026-10-19.
-- `number.THRESHOLDS["*"]["status"] = "provisional"` (all six thresholds;
-  PROGRESS.md "Threshold status"). The decision record and every report
-  state this; see item 5.
-- `report.OUTCOME_TEXT` recommendation sentences: draft wording, each one
-  followed by "(provisional wording)" in the rendered report
-  (`geo/report.py`).
+- Adapter fields marked `unverified` or `documented` in `FIELD_STATUS`
+  (`geo/adapters.py`): every OpenAI success field (no OpenAI answer yet), all
+  of Perplexity, and Anthropic's refusal, `pause_turn` and tool error shapes.
+- Every per-call cost estimate carries `label: "Estimated"`. Prices are
+  `label: "Published"` with a cited source URL, retrieved 2026-10-19.
+- `number.THRESHOLDS["*"]["status"] = "provisional"` (PROGRESS.md
+  "Threshold status").
+- Recommendation text ends with "(draft wording, not yet reviewed against
+  a live run)" (`report.PROVISIONAL_WORDING_NOTE`) for every outcome except
+  `insufficient_evidence`, the only one a live run has produced so far.
 - `min_para_chars_status: "placeholder"` (`MIN_PARA_CHARS` in
-  `geo/pagechecks.py`), unrelated to the decision thresholds above: the
-  minimum paragraph length used by the main-content check.
+  `geo/pagechecks.py`), the minimum paragraph length used by the
+  main-content check.
 
-## 5. Recommended first live run
+## 6. Recommended first live run
 
-- Engines: anthropic and openai only (the only two with a verified terms
-  status and a verified request shape). Do not pass `--opt-in` for
-  perplexity or xai.
-- Budget: `--cap-usd 1`, which at `--repeats 1` with the 10 BoardFlight
-  prompts (10 x 1 x 2 = 20 sendable slots) stays well under the 60-slot
-  estimate above.
-- Key pages: the BoardFlight home page and the JFK airport page
-  (`tests/geo_fixtures.py: KEY_PAGES`), so page checks and the decision
-  have real evidence for R1.
-- After it finishes: run `python3 -m geo.cli report RUN_DIR`, read the
-  recommendation and the Measurements block, and compare the real n's and
-  citation rates against the provisional thresholds in PROGRESS.md before
-  trusting an R0 or R3 outcome on a second run.
-- Do not raise the cap or add more engines until this first run's output
-  has been read end to end by the lead.
+- Engines: anthropic and openai only. Add `--opt-in perplexity` (with
+  `PERPLEXITY_API_KEY`) only for a second run, once the first has been read.
+- Budget: `--repeats 1` (20 slots, $0.497 expected) fits `--cap-usd 1`.
+  A `--repeats 1` run cannot get past R0: each per-prompt citation rate needs
+  `N_MIN_REPEATS` (3) ok captures, so every engine's pooled rate is
+  Insufficient and R0 fires with `engines_below_minimum` (unless R1 fires
+  first on a page check). It still records real responses, page checks and
+  claims. `--repeats 3` (60 slots, $1.491 expected, $1.791 upper) is the
+  smallest run that can reach R2 to R4 and needs `--cap-usd 2` or more.
+- Key pages: the three above, so page checks give R1 real evidence.
+- Afterwards: read the report and the ledger, export fixtures (section 4),
+  and compare the real n's and rates against the provisional thresholds
+  before trusting an R0 or R3 outcome.

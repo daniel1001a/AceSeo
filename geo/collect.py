@@ -131,11 +131,13 @@ def guard(snapshot, opt_in_selected):
 
 def collect(engines_doc, prices_doc, prompts, facts_bytes, *, root, repeats, cap_usd, key_pages,
             mention_terms, key_content=(), thresholds=None, opt_in_selected=(), max_attempts=2,
-            send=False, transport=None, api_keys=None, clock=utc_now, sleep=time.sleep, on_start=None):
+            send=False, transport=None, api_keys=None, clock=utc_now, sleep=time.sleep, on_start=None,
+            progress=None):
     """Dry run (default) -> plan summary dict. send=True -> run directory path.
 
     on_start(writer), if given, runs after the run directory exists and before
-    the first slot is sent (the pipeline runs page checks there)."""
+    the first slot is sent (the pipeline runs page checks there). progress(event),
+    if given, gets one dict per capture attempt and per skipped slot."""
     if not cost.is_dec(cap_usd):
         raise CollectError("cap_usd must be a dec string")
     if not isinstance(max_attempts, int) or isinstance(max_attempts, bool) or max_attempts < 1:
@@ -164,7 +166,7 @@ def collect(engines_doc, prices_doc, prompts, facts_bytes, *, root, repeats, cap
                        secrets=[keys[s["engine"]] for s in plan.snapshots], clock=clock)
     if on_start is not None:
         on_start(writer)
-    Collector(writer, plan, transport, keys, opt_in_selected, clock, sleep).run()
+    Collector(writer, plan, transport, keys, opt_in_selected, clock, sleep, progress).run()
     return writer.run_dir
 
 
@@ -184,18 +186,26 @@ def start_run(plan, facts_bytes, *, root, repeats, cap_usd, key_pages, mention_t
 
 
 class Collector:
-    def __init__(self, writer, plan, transport, api_keys, opt_in_selected, clock, sleep):
+    def __init__(self, writer, plan, transport, api_keys, opt_in_selected, clock, sleep, progress=None):
         self.writer, self.plan, self.transport = writer, plan, transport
+        self.progress = progress
         self.keys, self.opt_in, self.clock, self.sleep = api_keys, opt_in_selected, clock, sleep
         self.manifest = writer.manifest
         self.snaps = {s["engine"]: s for s in plan.snapshots}
         self.cap = Decimal(self.manifest["budget"]["cap_usd"])
         self.spent = Decimal(0)
         self.calls = 0
+        self.exhausted = set()  # engines that answered quota_exhausted
 
     def skip(self, slot, reason):
-        self.manifest["skipped_slots"].append({"engine": slot.engine, "prompt_id": slot.prompt["prompt_id"],
-                                               "repeat_index": slot.repeat_index, "reason": reason})
+        entry = {"engine": slot.engine, "prompt_id": slot.prompt["prompt_id"],
+                 "repeat_index": slot.repeat_index, "reason": reason}
+        self.manifest["skipped_slots"].append(entry)
+        self._note(dict(entry, event="skip"))
+
+    def _note(self, event):
+        if self.progress is not None:
+            self.progress(event)
 
     def run(self):
         i, self.sent_this_slot = 0, False
@@ -213,6 +223,9 @@ class Collector:
     def run_slot(self, slot):
         self.sent_this_slot = False
         snap = self.snaps[slot.engine]
+        if slot.engine in self.exhausted:
+            self.skip(slot, "quota_exhausted")
+            return
         for attempt in range(1, self.manifest["max_attempts"] + 1):
             try:
                 guard(snap, self.opt_in)
@@ -227,6 +240,9 @@ class Collector:
             self.sent_this_slot = True
             rec = self.send(slot, snap, attempt)
             if rec["status"] != "failed":
+                return
+            if rec["error_class"] == "quota_exhausted":  # retrying cannot help
+                self.exhausted.add(slot.engine)
                 return
             if attempt < self.manifest["max_attempts"]:
                 self.sleep(RETRY_BACKOFF_S * attempt)
@@ -256,6 +272,10 @@ class Collector:
             http_status=http_status, usage=outcome.usage, search_observed=outcome.search_observed)
         self.writer.append(rec)
         self.writer.write_manifest()
+        self._note({"event": "capture", "done": self.calls, "total": len(self.plan.slots),
+                    "engine": slot.engine, "prompt_id": slot.prompt["prompt_id"],
+                    "repeat_index": slot.repeat_index, "attempt": attempt, "status": rec["status"],
+                    "error_class": rec["error_class"], "spent_estimate_usd": cost.dec_str(self.spent)})
         return rec
 
 

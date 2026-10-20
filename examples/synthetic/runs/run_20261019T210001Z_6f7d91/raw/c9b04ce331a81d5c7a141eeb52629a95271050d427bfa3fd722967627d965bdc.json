@@ -1,0 +1,1 @@
+{"input":"Which website shows historical TSA wait times by hour for US airports?","model":"gpt-5-mini","tools":[{"type":"web_search"}]}

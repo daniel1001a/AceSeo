@@ -139,6 +139,23 @@ class EndToEnd(PipelineCase):
         self.assertIsNone(re.search(r"\d", body), body)
 
 
+class OutcomeWording(unittest.TestCase):
+    def _dec(self, outcome, r0_reason):
+        return {"outcome": outcome, "evaluations": [{"rule_id": "R0", "reason_code": r0_reason}]}
+
+    def test_insufficient_text_names_the_gate(self):
+        self.assertIn("Too few vendors", R.outcome_text(self._dec("insufficient_evidence", "engines_below_minimum")))
+        self.assertIn("key page could not be checked",
+                      R.outcome_text(self._dec("insufficient_evidence", "page_checks_incomplete")))
+
+    def test_only_reviewed_outcome_drops_draft_marker(self):
+        for reason in R.INSUFFICIENT_TEXT:
+            self.assertNotIn("draft wording", R.outcome_text(self._dec("insufficient_evidence", reason)))
+        for outcome in R.OUTCOME_TEXT:
+            self.assertTrue(R.outcome_text(self._dec(outcome, "engines_sufficient")).endswith(
+                R.PROVISIONAL_WORDING_NOTE))
+
+
 class Refusals(PipelineCase):
     def test_live_transport_refused(self):
         with self.assertRaises(pipeline.PipelineError):

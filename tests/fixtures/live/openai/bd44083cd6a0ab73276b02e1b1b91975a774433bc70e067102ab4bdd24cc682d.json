@@ -1,0 +1,8 @@
+{
+ "error": {
+  "code": "credit_balance_exhausted",
+  "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+  "param": null,
+  "type": "insufficient_quota"
+ }
+}

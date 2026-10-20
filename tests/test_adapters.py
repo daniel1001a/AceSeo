@@ -17,7 +17,7 @@ import unittest
 import urllib.error
 
 from geo import adapters, collect, records
-from geo.adapters import ADAPTERS, NotImplementedAdapter
+from geo.adapters import ADAPTERS
 from geo.canonical import canonical_bytes, strict_load_path
 from geo.collect import CollectError, FixtureTransport, TermsGateError, TransportError, UrllibTransport
 from geo.validate import validate_run
@@ -27,8 +27,12 @@ from tests import geo_fixtures as fx
 
 OAI = "https://api.openai.com/v1/responses"
 ANT = "https://api.anthropic.com/v1/messages"
-KEYS = {"openai": fx.SECRET, "anthropic": fx.SECRET + "-anthropic"}
+PPX = "https://api.perplexity.ai/v1/agent"
+KEYS = {"openai": fx.SECRET, "anthropic": fx.SECRET + "-anthropic", "perplexity": fx.SECRET + "-pplx"}
 SITE = "https://www.boardflight.com/"
+# The real openai 429 body of run_20261020T142935Z_74e3cd (tests/fixtures/live/openai/).
+QUOTA_BODY = (b'{"error":{"code":"credit_balance_exhausted","message":"You have no credits remaining.",'
+              b'"param":null,"type":"insufficient_quota"}}')
 
 
 def jb(doc):
@@ -98,6 +102,8 @@ class OpenAIParse(unittest.TestCase):
 
     def test_failures(self):
         self.assertEqual(self.a.parse(429, b'{"error":{}}').error_class, "rate_limited")
+        self.assertEqual(self.a.parse(429, QUOTA_BODY).error_class, "quota_exhausted")
+        self.assertEqual(self.a.parse(500, QUOTA_BODY).error_class, "http_error")
         self.assertEqual(self.a.parse(500, b"<html>oops</html>").error_class, "http_error")
         self.assertEqual(self.a.parse(200, b"not json").error_class, "parse_error")
         self.assertEqual(self.a.parse(200, b'{"output": 3}').error_class, "parse_error")
@@ -151,14 +157,75 @@ class AnthropicParse(unittest.TestCase):
         self.assertEqual(self.a.auth_value("k"), "k")
 
 
-class PerplexityInterface(unittest.TestCase):
-    def test_build_only(self):
-        a = ADAPTERS["perplexity"]
-        req = a.build(fx.engine_entry(fx.engines_doc(), "perplexity"), {"text": "x"})
-        self.assertEqual(req["auth_header"], "Authorization")
-        with self.assertRaises(NotImplementedAdapter):
-            a.parse(200, b"{}")
-        self.assertNotIn("perplexity", adapters.IMPLEMENTED)
+def ppx_body(text="BoardFlight covers 33 US airports.[1]", results=None, status="completed", searches=1,
+             cached=0, usage=True):
+    """SYNTHETIC, shaped like the Agent API examples (docs.perplexity.ai, read 2026-10-20)."""
+    if results is None:
+        results = [{"id": 1, "url": SITE, "title": "BoardFlight", "snippet": "Covers 33 US airports",
+                    "date": "2026-05-01", "last_updated": "2026-05-01", "source": "web"},
+                   {"id": 2, "url": "https://example.com/tsa", "title": "TSA", "snippet": "s", "source": "web"}]
+    out = []
+    if searches:
+        out.append({"type": "search_results", "queries": ["airport security wait"], "results": results})
+    out.append({"type": "message", "role": "assistant", "status": "completed", "id": "msg_1",
+                "content": [{"type": "output_text", "text": text, "annotations": [], "logprobs": []}]})
+    doc = {"id": "resp_1", "object": "response", "model": "perplexity/sonar", "status": status, "output": out}
+    if usage:
+        u = {"input_tokens": 900, "output_tokens": 250, "total_tokens": 1150,
+             "input_tokens_details": {"cached_tokens": cached}, "output_tokens_details": {"reasoning_tokens": 0},
+             "cost": {"currency": "USD", "input_cost": 0.0002, "output_cost": 0.0006, "total_cost": 0.0033}}
+        if searches:
+            u["tool_calls_details"] = {"search_web": {"invocation": searches}}
+        doc["usage"] = u
+    return jb(doc)
+
+
+class PerplexityParse(unittest.TestCase):
+    a = ADAPTERS["perplexity"]
+
+    def test_success_cites_marked_results_only(self):
+        o = self.a.parse(200, ppx_body("A[1]. B[1][2]. C[9]."))
+        self.assertEqual(o.status, "ok")
+        self.assertEqual([c["url"] for c in o.citations], [SITE, "https://example.com/tsa"])
+        self.assertEqual([c["position"] for c in o.citations], [0, 1])
+        self.assertEqual(o.citations[0]["provider_field"], "output[0].results[0]")
+        self.assertIsNone(o.citations[0]["cited_text"])
+        self.assertEqual(o.usage, {"input_tokens": 900, "output_tokens": 250, "cached_input_tokens": 0,
+                                   "search_calls": 1})
+        self.assertEqual(o.search_observed, 1)
+
+    def test_retrieved_but_unmarked_is_not_cited(self):
+        o = self.a.parse(200, ppx_body("No markers here."))
+        self.assertEqual((o.status, o.citations), ("ok", []))
+
+    def test_no_search(self):
+        o = self.a.parse(200, ppx_body("From memory.", searches=0))
+        self.assertEqual((o.status, o.citations, o.search_observed), ("ok", [], 0))
+        self.assertEqual(o.usage["search_calls"], 0)
+
+    def test_failures(self):
+        self.assertEqual(self.a.parse(429, b"{}").error_class, "rate_limited")
+        self.assertEqual(self.a.parse(500, b"{}").error_class, "http_error")
+        self.assertEqual(self.a.parse(200, b"not json").error_class, "parse_error")
+        self.assertEqual(self.a.parse(200, jb({"choices": []})).error_class, "parse_error")
+        self.assertEqual(self.a.parse(200, ppx_body("  ")).error_class, "empty_answer")
+        o = self.a.parse(200, ppx_body(status="incomplete"))
+        self.assertEqual((o.status, o.error_class), ("failed", "incomplete"))
+
+    def test_bad_results_skipped(self):
+        res = [{"id": 1, "url": "ftp://x"}, {"id": "2", "url": SITE}, "junk", {"id": 3, "url": SITE, "title": 5}]
+        o = self.a.parse(200, ppx_body("A[1][2][3]", results=res))
+        self.assertEqual([(c["url"], c["title"]) for c in o.citations], [(SITE, None)])
+
+    def test_usage_incomplete(self):
+        self.assertIsNone(self.a.parse(200, ppx_body(usage=False)).usage)
+        self.assertEqual(self.a.parse(200, ppx_body(cached=40)).usage["cached_input_tokens"], 40)
+
+    def test_auth_and_build(self):
+        req = self.a.build(fx.engine_entry(fx.engines_doc(), "perplexity"), {"text": "x"})
+        self.assertEqual((req["auth_header"], self.a.auth_value("k")), ("Authorization", "Bearer k"))
+        self.assertIn("[1][2]", req["body"]["instructions"])
+        self.assertIn("perplexity", adapters.IMPLEMENTED)
 
 
 class Clock:
@@ -195,7 +262,7 @@ class CollectBase(unittest.TestCase):
                     ov.setdefault(e, {})["enabled"] = False
         self.transport = transport or (FixtureTransport(responses or {}) if send else None)
         return collect.collect(
-            fx.engines_doc(ov), fx.load("prices.json"), prompts(prompt_ids), FACTS, root=self.root,
+            fx.engines_doc(ov), fx.w5_10_prices(), prompts(prompt_ids), FACTS, root=self.root,
             repeats=repeats, cap_usd=cap, key_pages=fx.KEY_PAGES, mention_terms=fx.MENTION_TERMS,
             opt_in_selected=opt_in, max_attempts=max_attempts, send=send, transport=self.transport,
             api_keys=keys if send else None, clock=Clock(), sleep=lambda s: None)
@@ -241,7 +308,7 @@ class DryRunAndRefusals(CollectBase):
     def test_dry_run_rejects_transport(self):
         t = FixtureTransport({})
         with self.assertRaises(CollectError):
-            collect.collect(fx.engines_doc(), fx.load("prices.json"), prompts(), FACTS, root=self.root,
+            collect.collect(fx.engines_doc(), fx.w5_10_prices(), prompts(), FACTS, root=self.root,
                             repeats=1, cap_usd="5", key_pages=fx.KEY_PAGES, mention_terms=fx.MENTION_TERMS,
                             transport=t)
         self.assertEqual((t.calls, os.path.exists(self.root)), ([], False))
@@ -260,10 +327,14 @@ class DryRunAndRefusals(CollectBase):
         self.assertEqual(self.transport.calls, [])
         self.assertFalse(os.path.exists(self.root))
 
-    def test_perplexity_refused(self):
-        for send in (False, True):
-            with self.assertRaises(CollectError):
-                self.collect(opt_in=("perplexity",), send=send)
+    def test_perplexity_needs_opt_in_and_key(self):
+        plan = self.collect(send=False)
+        self.assertNotIn("perplexity", plan["engines"])
+        plan = self.collect(opt_in=("perplexity",), send=False)
+        self.assertIn("perplexity", plan["engines"])
+        keys = {k: v for k, v in KEYS.items() if k != "perplexity"}
+        with self.assertRaises(CollectError):
+            self.collect(opt_in=("perplexity",), keys=keys)
         self.assertEqual(self.transport.calls, [])
         self.assertFalse(os.path.exists(self.root))
 
@@ -284,6 +355,16 @@ class Send(CollectBase):
         self.assertIsNotNone(ant["cost_from_usage_usd"])
         oai = next(c for c in caps if c["engine"] == "openai")
         self.assertIsNone(oai["cost_from_usage_usd"])  # cached token semantics unverified
+
+    def test_success_with_perplexity_opt_in(self):
+        d = self.collect({OAI: [(200, oai_body())], ANT: [(200, ant_body())], PPX: [(200, ppx_body())]},
+                         opt_in=("perplexity",))
+        self.assert_clean(d)
+        ppx = next(c for c in self.captures(d) if c["engine"] == "perplexity")
+        self.assertEqual((ppx["status"], [c["url"] for c in ppx["citations"]]), ("ok", [SITE]))
+        self.assertIsNotNone(ppx["cost_from_usage_usd"])
+        call = next(c for c in self.transport.calls if c["url"] == PPX)
+        self.assertEqual(call["headers"]["Authorization"], "Bearer " + KEYS["perplexity"])
 
     def test_auth_header_built_not_stored(self):
         d = self.collect({OAI: [(200, oai_body())], ANT: [(200, ant_body())]})
@@ -326,6 +407,19 @@ class Send(CollectBase):
         self.assertEqual([(c["error_class"], c["http_status"]) for c in caps],
                          [("rate_limited", 429), ("http_error", 500)])
         self.assertTrue(caps[1]["raw_path"].endswith(".bin"))
+        self.assert_clean(d)
+
+    def test_quota_exhausted_is_not_retried_and_skips_the_engine(self):
+        d = self.collect({OAI: [(429, QUOTA_BODY)], ANT: [(200, ant_body())] * 2},
+                         prompt_ids=("p_09", "p_04"), max_attempts=2)
+        caps = self.captures(d)
+        self.assertEqual(sorted((c["engine"], c["status"], c["error_class"]) for c in caps),
+                         [("anthropic", "ok", None), ("anthropic", "ok", None),
+                          ("openai", "failed", "quota_exhausted")])
+        sent = {c["prompt_id"] for c in caps if c["engine"] == "openai"}
+        skipped = [(s["engine"], s["prompt_id"]) for s in self.manifest(d)["skipped_slots"]
+                   if s["reason"] == "quota_exhausted"]
+        self.assertEqual(sorted([("openai", p) for p in sent] + skipped), [("openai", "p_04"), ("openai", "p_09")])
         self.assert_clean(d)
 
     def test_parse_error_and_tool_error(self):
@@ -466,10 +560,23 @@ class Cli(unittest.TestCase):
                                "--mention-term", "BoardFlight"] + list(extra), environ=environ or {})
             return rc, out.getvalue(), err.getvalue(), os.listdir(tmp)
 
-    def test_dry_run(self):
-        rc, out, _, left = self.run_cli()
+    def test_dry_run_json(self):
+        rc, out, _, left = self.run_cli("--json")
         self.assertEqual((rc, left), (0, []))
         self.assertEqual(json.loads(out)["mode"], "dry_run")
+
+    def test_dry_run_text(self):
+        rc, out, _, left = self.run_cli()
+        self.assertEqual((rc, left), (0, []))
+        self.assertIn("Dry run: nothing is sent and nothing is written.", out)
+        self.assertIn("Cost (Estimated", out)
+        self.assertIn("add --opt-in perplexity", out)
+
+    def test_live_over_cap_refused_before_keys_used(self):
+        env = {"ANTHROPIC_API_KEY": "x", "OPENAI_API_KEY": "y"}
+        rc, _, err, left = self.run_cli("--live", "--cap-usd", "0.001", environ=env)
+        self.assertEqual((rc, left), (2, []))
+        self.assertIn("refused", err)
 
     def test_live_without_keys(self):
         rc, _, err, left = self.run_cli("--live")

@@ -31,6 +31,18 @@ def load(name):
     return strict_load_path(os.path.join(DATA, name))
 
 
+# The W5-10 planning inputs (design/w5-test-list.md). step0/data/prices.json now
+# holds measured ones; tests that pin W5-10 arithmetic use these instead.
+W5_10_TOKENS = {"label": "Estimated", "basis": "W5-10 planning inputs (tests only)",
+                "input_tokens_per_call": 1000, "output_tokens_per_call": 500, "searches_per_call": 1}
+
+
+def w5_10_prices():
+    prices = load("prices.json")
+    prices["token_assumptions"] = dict(W5_10_TOKENS)
+    return prices
+
+
 def ts(seconds):
     """T0 plus seconds, as a W4 ts."""
     h, rest = divmod(21 * 3600 + seconds, 3600)

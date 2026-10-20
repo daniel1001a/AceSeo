@@ -19,7 +19,10 @@ from .facts import facts_by_key
 from .records import _finish
 
 MATCHER = "rule"
-MATCHER_VERSION = 1
+# v2: topic readers and the entity check see the sentence with Markdown
+# emphasis and code marks removed. Real answers bold the value
+# ("covers **33 US airports**"), which v1 read as no value.
+MATCHER_VERSION = 2
 MATCHERS = ("rule", "llm")
 
 VERDICT_BASES = {
@@ -38,6 +41,7 @@ NOT_LIVE = "not_live"  # inactive, down, parked: not one of the W3 site_status v
 HAS_PROFILES = "has_profiles"
 
 _I = re.I
+_MARKUP = re.compile(r"\*\*|__|`")
 
 # A sentence ends at . ! ? followed by space or end (so "boardflight.com" stays
 # whole) but not after an abbreviation such as "U.S.", at a CJK full stop, or at
@@ -206,7 +210,7 @@ def match_text(text, facts_doc):
     facts = facts_by_key(facts_doc)
     out = []
     for s, e in sentences(text):
-        sent = text[s:e]
+        sent = _MARKUP.sub("", text[s:e])
         hits = [(topic, key, value) for topic, key, read in TOPICS
                 for value in [read(sent)] if value is not None]
         no_fact = _NO_FACT.search(sent) is not None

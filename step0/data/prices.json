@@ -40,9 +40,9 @@
   },
   "token_assumptions": {
     "label": "Estimated",
-    "basis": "SYNTHETIC planning inputs from design/w5-test-list.md W5-10; unmeasured (PLAN A8). Search result content billed as input tokens is not included.",
-    "input_tokens_per_call": 1000,
-    "output_tokens_per_call": 500,
-    "searches_per_call": 1
+    "basis": "Mean of the 10 ok anthropic captures of run_20261020T142935Z_74e3cd (2026-10-20), rounded up: input 21987 (search results are billed as input), output 762, searches 1.7. openai and perplexity are not measured; the same values are assumed. The W5-10 planning inputs (1000, 500, 1) under-estimated that run by about half.",
+    "input_tokens_per_call": 22000,
+    "output_tokens_per_call": 800,
+    "searches_per_call": 2
   }
 }

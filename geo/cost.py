@@ -19,6 +19,7 @@ CONDITION = re.compile(r"input_tokens>=(0|[1-9][0-9]*)")
 ASSUMED_SEARCHES_WHEN_UNCAPPED = 1
 SEARCH_BASIS_DOCUMENTED = "documented_max_searches_per_call"
 SEARCH_BASIS_ASSUMED = "assumed_1_search_per_call_estimated"
+SEARCH_BASIS_EXPECTED = "expected_searches_per_call_estimated"
 
 
 class CostError(ValueError):
@@ -133,14 +134,17 @@ def cost_estimate(rows, max_searches_per_call, assumptions):
 
     The expected value uses the planning assumption searches_per_call (W5-10,
     same as step0). The upper value uses the per-call search cap: documented
-    (anthropic max_uses) or assumed 1 when the provider documents none.
+    (anthropic max_uses) or assumed 1 when the provider documents none, but
+    never below the expected count (then the basis says so).
     """
     upper_searches, basis = planned_searches(max_searches_per_call)
     tin = assumptions["input_tokens_per_call"]
     tout = assumptions["output_tokens_per_call"]
     searches = assumptions["searches_per_call"]
     total = _total(rows, tin, tout, 0, searches)
-    upper = _total(rows, tin, tout, 0, max(searches, upper_searches))
+    if searches > upper_searches:
+        upper_searches, basis = searches, SEARCH_BASIS_EXPECTED
+    upper = _total(rows, tin, tout, 0, upper_searches)
     if total is None or upper is None:
         raise CostError("price snapshot lacks a unit needed for the estimate")
     return total, {"label": "Estimated", "input_tokens": tin, "output_tokens": tout,

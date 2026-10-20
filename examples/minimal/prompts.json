@@ -1,0 +1,10 @@
+{
+  "schema_version": "step0-prompts/v1",
+  "source": "examples/minimal: replace with your own questions",
+  "substitutions": {"BRAND": "Example Co", "DOMAIN": "www.example.com"},
+  "prompts": [
+    {"prompt_id": "p_01", "type": "B", "lang": "en", "template": "What is {BRAND}?"},
+    {"prompt_id": "p_02", "type": "B", "lang": "en", "template": "Is {DOMAIN} a legitimate and active website?"},
+    {"prompt_id": "p_03", "type": "B", "lang": "en", "template": "Is {BRAND} free to use?"}
+  ]
+}

@@ -17,8 +17,8 @@ from .canonical import StrictJSONError, canonical_bytes, sha256_hex, strict_load
 from .claims import MATCHERS, NO_FACT_VERDICTS, VERDICT_BASES
 from .config import with_config_sha
 from .decide import DECISION_FIELDS, RULE_SET_VERSION, decision_problems
-from .records import (CAPTURE_STATUSES, ERROR_CLASSES, NULL_RAW_ERROR_CLASSES, SKIP_REASONS,
-                      TRANSPORTS)
+from .records import (ATTACHMENT_ROLES, CAPTURE_STATUSES, ERROR_CLASSES, MANUAL, NULL_RAW_ERROR_CLASSES,
+                      SKIP_REASONS, TRANSPORTS)
 from .render import BASELINE_ITEMS
 from .runindex import RunIndex
 from .store import FORBIDDEN_HEADER_NAMES, INPUT_FILES, RAW_EXTS, RECORD_FILES
@@ -33,7 +33,7 @@ CAPTURE_FIELDS = COMMON_FIELDS + (
     "engine", "engine_snapshot", "prompt_id", "prompt_text", "prompt_sha256", "repeat_index", "attempt",
     "started_at", "completed_at", "status", "error_class", "http_status", "request_sha256", "raw_sha256",
     "raw_path", "answer_text", "citations", "usage", "cost_estimate_usd", "cost_from_usage_usd",
-    "cost_billed_usd", "cost_billed_field", "search_observed", "series_key")
+    "cost_billed_usd", "cost_billed_field", "search_observed", "access", "attachments", "series_key")
 PAGE_CHECK_FIELDS = COMMON_FIELDS + (
     "check_name", "check_version", "url_norm", "url_role", "agent_profile", "params", "fetched_at",
     "final_url", "http_status", "redirect_chain", "response_headers", "raw_sha256", "raw_path",
@@ -160,12 +160,12 @@ class _Run:
             self.err("E_SCHEMA", w, "bad run_id")
         elif m["run_id"] != os.path.basename(os.path.normpath(self.dir)):
             self.err("E_SCHEMA", w, "run_id does not equal the run directory name")
-        if m["run_kind"] not in ("collect", "analyze"):
+        if m["run_kind"] not in ("collect", "analyze", MANUAL):
             self.err("E_SCHEMA", w, "bad run_kind")
-        if m["run_kind"] == "collect" and m["source_run_ids"]:
-            self.err("E_SCHEMA", w, "collect runs have no source_run_ids")
-        if m["transport"] not in TRANSPORTS:
-            self.err("E_SCHEMA", w, "bad transport")
+        if m["run_kind"] in ("collect", MANUAL) and m["source_run_ids"]:
+            self.err("E_SCHEMA", w, "collect and manual runs have no source_run_ids")
+        if m["transport"] != MANUAL if m["run_kind"] == MANUAL else m["transport"] not in TRANSPORTS:
+            self.err("E_SCHEMA", w, "bad transport for run_kind %r" % (m["run_kind"],))
         if not _ts(m["started_at"]) or (m["sealed_at"] is not None and not _ts(m["sealed_at"])):
             self.err("E_TIME", w, "bad started_at or sealed_at")
         for f in ("repeats", "max_attempts", "planned_slots"):
@@ -332,19 +332,48 @@ class _Run:
             self.err("E_ENGINE_SNAPSHOT", where, "config_sha256 does not recompute")
         if not snap["model"] or not snap["tool_version"] or not ids.is_slug(snap["model_vendor"]):
             self.err("E_ENGINE_SNAPSHOT", where, "model, model_vendor or tool_version invalid")
-        if not _https(snap["terms_url"]):
-            self.err("E_ENGINE_SNAPSHOT", where, "terms_url must be https")
-        self._check_price_snapshot(where, snap["price_snapshot"])
+        manual = m["run_kind"] == MANUAL
+        if rec["access"] != (MANUAL if manual else "api"):
+            self.err("E_SCHEMA", where, "access must be %s in a %s run" % (MANUAL if manual else "api", m["run_kind"]))
+        if manual:
+            self._check_manual_capture(where, rec)
+        elif rec["attachments"] != []:
+            self.err("E_SCHEMA", where, "attachments are for manual captures only")
+        self._check_capture_common(where, rec, snap, manual)
 
-        # V12 terms gate, independent of how the record got here.
-        allowed, reason = terms.gate(snap, m["opt_in_selected"])
-        if not allowed:
-            self.err("E_TERMS_GATE", where, "engine %s: %s" % (rec["engine"], reason))
-        dates = (snap["terms_retrieved"], snap["terms_last_updated"])
-        if not all(isinstance(d, str) and DATE.fullmatch(d) for d in dates):
-            self.err("E_TERMS_GATE", where, "terms_retrieved and terms_last_updated must be dates")
-        elif _ts(rec["completed_at"]) and snap["terms_retrieved"] > rec["completed_at"][:10]:
-            self.err("E_TERMS_GATE", where, "terms_retrieved is after the capture date")
+    def _check_manual_capture(self, where, rec):
+        """A manual capture was typed or pasted by a person: no request, no terms gate, no cost."""
+        snap = rec["engine_snapshot"]
+        if (snap["terms_status"] != MANUAL or snap["opt_in"] is not False or snap["price_snapshot"] != []
+                or any(snap[k] is not None for k in ("terms_url", "terms_last_updated", "terms_retrieved"))):
+            self.err("E_ENGINE_SNAPSHOT", where, "manual snapshot must have terms_status manual and no terms or prices")
+        if rec["status"] != "ok":
+            self.err("E_STATUS", where, "manual captures are ok")
+        for f in ("request_sha256", "http_status", "usage", "search_observed", "cost_from_usage_usd",
+                  "cost_billed_usd", "cost_billed_field"):
+            if rec[f] is not None:
+                self.err("E_SCHEMA", where, "%s must be null for a manual capture" % f)
+        if rec["cost_estimate_usd"] != "0":
+            self.err("E_COST", where, "a manual capture costs nothing")
+        if isinstance(rec["raw_path"], str) and isinstance(rec["answer_text"], str):
+            body = self._check_file(where, rec["raw_path"], rec["raw_sha256"])
+            if body is not None and body != rec["answer_text"].encode("utf-8"):
+                self.err("E_RAW_HASH", where, "manual answer_text differs from its raw text file")
+        atts = rec["attachments"]
+        if not isinstance(atts, list):
+            self.err("E_SCHEMA", where, "attachments must be a list")
+            return
+        for a in atts:
+            if (not isinstance(a, dict) or set(a) != {"role", "raw_sha256", "raw_path"}
+                    or a["role"] not in ATTACHMENT_ROLES):
+                self.err("E_SCHEMA", where, "bad attachment %r" % (a,))
+                continue
+            self._check_file(where, a["raw_path"], a["raw_sha256"])
+
+    def _check_capture_common(self, where, rec, snap, manual):
+        m = self.manifest
+        if not manual:
+            self._check_terms_and_prices(where, rec, snap)
 
         # V9 prompt
         pid, text = rec["prompt_id"], rec["prompt_text"]
@@ -392,6 +421,31 @@ class _Run:
         if rec["search_observed"] is not None and not (_int(rec["search_observed"]) and rec["search_observed"] >= 0):
             self.err("E_SCHEMA", where, "search_observed must be a non-negative int or null")
 
+        if not manual:
+            self._check_request(where, rec, snap)
+
+        # V14 citations
+        self._check_citations(where, rec)
+
+        # V15 cost
+        if not manual:
+            self._check_cost(where, rec, snap)
+
+    def _check_terms_and_prices(self, where, rec, snap):
+        if not _https(snap["terms_url"]):
+            self.err("E_ENGINE_SNAPSHOT", where, "terms_url must be https")
+        self._check_price_snapshot(where, snap["price_snapshot"])
+        # V12 terms gate, independent of how the record got here.
+        allowed, reason = terms.gate(snap, self.manifest["opt_in_selected"])
+        if not allowed:
+            self.err("E_TERMS_GATE", where, "engine %s: %s" % (rec["engine"], reason))
+        dates = (snap["terms_retrieved"], snap["terms_last_updated"])
+        if not all(isinstance(d, str) and DATE.fullmatch(d) for d in dates):
+            self.err("E_TERMS_GATE", where, "terms_retrieved and terms_last_updated must be dates")
+        elif _ts(rec["completed_at"]) and snap["terms_retrieved"] > rec["completed_at"][:10]:
+            self.err("E_TERMS_GATE", where, "terms_retrieved is after the capture date")
+
+    def _check_request(self, where, rec, snap):
         # V7 request body
         req = self._check_file(where, "raw/%s.json" % rec["request_sha256"], rec["request_sha256"], ("json",)) \
             if _sha(rec["request_sha256"]) else None
@@ -408,7 +462,7 @@ class _Run:
             if not isinstance(body, dict) or body.get("model") != snap["model"]:
                 self.err("E_ENGINE_SNAPSHOT", where, "model differs from the stored request body")
 
-        # V14 citations
+    def _check_citations(self, where, rec):
         cits = rec["citations"]
         if not isinstance(cits, list):
             self.err("E_CITATION", where, "citations must be a list")
@@ -424,7 +478,7 @@ class _Run:
             if positions and (not all(_int(p) for p in positions) or sorted(positions) != list(range(len(positions)))):
                 self.err("E_CITATION", where, "citation positions must be unique ints from 0")
 
-        # V15 cost
+    def _check_cost(self, where, rec, snap):
         usage = rec["usage"]
         if usage is not None and (not isinstance(usage, dict) or set(usage) != set(USAGE_FIELDS) or any(
                 v is not None and not (_int(v) and v >= 0) for v in usage.values())):
@@ -643,6 +697,9 @@ class _Run:
         if self.manifest["run_kind"] == "analyze" and any(
                 r.get("kind") in ("capture", "page_check") for _, r in self.records):
             self.err("E_SCHEMA", "manifest.json", "analyze runs contain no captures or page_checks")
+        if self.manifest["run_kind"] == MANUAL and any(
+                r.get("kind") in ("page_check", "decision") for _, r in self.records):
+            self.err("E_SCHEMA", "manifest.json", "manual runs contain no page_checks or decisions")
         if any(r.get("kind") == "page_check" for _, r in self.records) and not self.manifest["key_pages"]:
             self.err("E_SCHEMA", "manifest.json", "key_pages is empty but page checks exist")
         captures = {r.get("id"): r for _, r in self.records if r.get("kind") == "capture"}

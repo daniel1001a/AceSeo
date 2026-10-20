@@ -1,0 +1,1 @@
+{"max_tokens":1024,"messages":[{"content":"What is the current TSA security wait time at JFK airport?","role":"user"}],"model":"claude-haiku-5-5","tools":[{"max_uses":3,"name":"web_search","type":"web_search_20250305"}]}

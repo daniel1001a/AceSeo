@@ -20,20 +20,41 @@ RULE_NAMES = {
 }
 
 OUTCOME_TEXT = {
-    "seo_first": "SEO first. A blocking check failed on a key page. Fix it before any GEO work, because AI "
-                 "search engines cannot cite a page they cannot fetch or index.",
-    "insufficient_evidence": "Insufficient evidence. There are not enough usable captures, or a key page "
-                             "could not be checked. Collect more evidence before acting on GEO.",
-    "geo_fix_facts": "GEO first: fix facts. Several answers repeat the same claim that contradicts the "
-                     "site's own facts. Make the correct fact easier to find and quote.",
-    "geo_content": "GEO first: content. Key pages pass the blocking checks, but the configured engines "
-                   "rarely cite the site. Work on content that answers the prompts.",
-    "no_action": "No action. Key pages pass the blocking checks and no GEO rule fired.",
+    "seo_first": "SEO first. A blocking check failed on a key page. Fix it before any GEO work: a page that AI "
+                 "search cannot fetch or index is unlikely to be cited.",
+    "geo_fix_facts": "GEO first: fix facts. The same claim that contradicts the site's own facts, or repeats a "
+                     "value the facts mark as outdated, appears in enough answers to pass the reproduction "
+                     "threshold. Make the correct fact easier to find and quote.",
+    "geo_content": "GEO first: content. Key pages pass the blocking checks, but in enough vendors every "
+                   "configured engine cites the site below the low-citation threshold. Test content that "
+                   "answers the prompts directly.",
+    "no_action": "No action. Key pages pass the blocking checks and no GEO rule fired. This does not show that "
+                 "every answer is correct: claims the matcher could not decide are listed in the run ledger.",
 }
 
-# W5-09: the sentences above are draft wording, not reviewed by the lead. Each
-# recommendation says so, in words, right after the sentence.
-PROVISIONAL_WORDING_NOTE = " (provisional wording)"
+# R0 text depends on which gate stopped the run. Reviewed against the first
+# live report (run_20261020T142935Z_74e3cd, engines_below_minimum).
+INSUFFICIENT_TEXT = {
+    "page_checks_incomplete": "Insufficient evidence. A key page could not be checked, so the SEO rule cannot "
+                              "be decided. Fix access to the page listed under Excluded and skipped and run "
+                              "again. This is not a clean result.",
+    "engines_below_minimum": "Insufficient evidence. Too few vendors returned enough usable answers per prompt "
+                             "to compare citation rates. This is not a clean result: it says nothing yet about "
+                             "whether AI search cites the site. Run more repeats, with at least two vendors "
+                             "answering, before acting on GEO.",
+}
+
+# W5-09: the sentences above are draft wording, confirmed by the lead for the
+# first live run. Only the insufficient_evidence text has been reviewed against
+# a live report; the others still say so, in words, right after the sentence.
+PROVISIONAL_WORDING_NOTE = " (draft wording, not yet reviewed against a live run)"
+
+
+def outcome_text(dec):
+    if dec["outcome"] == "insufficient_evidence":
+        r0 = [e for e in dec["evaluations"] if e["rule_id"] == "R0"][0]
+        return INSUFFICIENT_TEXT[r0["reason_code"]]
+    return OUTCOME_TEXT[dec["outcome"]] + PROVISIONAL_WORDING_NOTE
 
 CLAIM_VERDICTS = ("contradicted", "outdated")
 
@@ -84,7 +105,7 @@ def build_report(index, decision_id):
     nums = stored_numbers(dec)
     fired = dec["fired_rule_id"]
 
-    rec = [Text(OUTCOME_TEXT[dec["outcome"]] + PROVISIONAL_WORDING_NOTE),
+    rec = [Text(outcome_text(dec)),
            Text(" The deciding rule is the %s rule. Decision record: " % RULE_NAMES[fired]),
            EvidenceRef(decision_id), Text(".")]
     if dec["hypothesis"]:

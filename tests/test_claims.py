@@ -241,6 +241,12 @@ class Matcher(unittest.TestCase):
         self.assertEqual([text[s.span_start:s.span_end] for s in specs], ["BoardFlight covers 33 US airports."])
         self.assertEqual(C.match_text("", self.facts), [])
 
+    def test_markdown_emphasis_is_read_through(self):
+        # run_20261020T142935Z_74e3cd, p_09: v1 read the bolded value as no value.
+        self.assertEqual(self.one("BoardFlight covers **33 US airports**."), ("llms.coverage.airport_count", "matched", "exact"))
+        self.assertEqual(self.one("**BoardFlight** covers `40` US airports."),
+                         ("llms.coverage.airport_count", "contradicted", "value_mismatch"))
+
     def test_unicode_digits_are_not_numbers(self):
         self.assertEqual(self.one("BoardFlight covers ٣٣ US airports."), (None, "needs_review", "undecided"))
 

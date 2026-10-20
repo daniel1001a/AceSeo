@@ -1,0 +1,185 @@
+{
+ "container": null,
+ "content": [
+  {
+   "signature": "CAQStQUKEAgTGAI4AUIIdGhpbmtpbmcSDKky/EIYc0jZoAW6iRoM4n8b18gdXfQjOTXLIjAVxp69tmNFZtDi4THdYTqQs093BtK5UcPOvn+rCMISBSvfSsRTdOcRubfuQHfGYUgq0gToZUytZ9ePQ5aVkfDwvStCHuGrTwFg+tgiUIMvHvVM38Q7sC++02pg2wYnOdKVuTT2M2QQo/UxspYDpq6/psuyF8+j5ZshRBlrXX3kIZQrvUC50l/BCf06vJMvHt441NxKn+MkUM68RXivaKtnVQJ97AQD1gws1B+T5npg+/4PEDDCMT/VBcFiQqFxP89IDUPClS2CWK45Dl4IJoUBp4+W6FnNDdn7ReHoNAa/+Ry+F1sLy6R6MdVPa7XBfjvG5u0yedzqrV/oLcDiLsEcpBYRicrewYT4r9z89D6bIFz+6EfB8WkhSlcgFmFRj0/XngfvXKkInZau5OVx6215GOadWgjh9aWJerHGloJtbARh/cPta/ZvsIwfJWy5z9AC4Hmd3zK8OPB1k+kMyouw0cAfW0DWJ69yymzWmdwEsvKigVX3IgfhWOmLdp9FVPxWHvGdbPefo1hX9MTicg1nrKOzzpcOSVXpirsViYm5LgwDzhOsTg6BPDxey7X7pFUMo+owCgwY9+99v/mWuNkDRTl9GPhvZNL56qFuBZu1EyzhMgxC35l6ADMHfKO2wVaUAw8NqsSL6zx6bSL6x4+AfXJ1Lk2cxEziLhREIZNUHaVD4xIpBepiMsf2av7hkPSItic/KKpO8uJ0BKLMmzK4xlhGFn9hSjOerX7JAGM4kpkYvy9T+c1Gi5Fy2/T3XmviiqN0ex83jmU8JM8Cbf4OHdyHpV2Qd1fMtz7ccg21VMXCPKC7hmcUbO8AFblaTiBKHUp5BuwYxGUVEjQWaQeKRWSuxqkYAQ==",
+   "thinking": "",
+   "type": "thinking"
+  },
+  {
+   "id": "redacted",
+   "input": {
+    "query": "BoardFlight airport wait time data source"
+   },
+   "name": "web_search",
+   "type": "server_tool_use"
+  },
+  {
+   "caller": {
+    "type": "direct"
+   },
+   "content": [
+    {
+     "encrypted_content": "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",
+     "page_age": null,
+     "title": "digitalhen/us-airport-wait-times · Datasets at Hugging Face",
+     "type": "web_search_result",
+     "url": "https://huggingface.co/datasets/digitalhen/us-airport-wait-times"
+    },
+    {
+     "encrypted_content": "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",
+     "page_age": "3604 days ago",
+     "title": "Airport Wait Times",
+     "type": "web_search_result",
+     "url": "https://awt.cbp.gov/"
+    },
+    {
+     "encrypted_content": "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",
+     "page_age": null,
+     "title": "BoardFlight — the time to arrive for any US flight",
+     "type": "web_search_result",
+     "url": "https://www.boardflight.com/"
+    },
+    {
+     "encrypted_content": "ErAICioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDKz37vZ66MhDqN/t/RoM7Mfh94gOVtbblQ1NIjA0MD0ZgKK+hiiUm18rY3z+RJ/VxF7g64bFYJtT27uEhANCsXZbBKlqkAP5lKkkSQYqswc7T30W9K6nnVWEdDmtZ0jyhMuPhMKJdirtBtffH0EDiQ0EOaWyLv+0C62PxNVHv4WVQLShwyoH4qAqlR5m+0gKUhinU9qMX8T4YcQ+8pUg73keJ5gKlbrtsHMRJB7iAydLYXCbnol+1hY5/GSArRWi1ju/Cc9mI2mfZQ4rWHess0WrZi115MvLXv8wfi8ICrP/Gp+XpN6RHC+QbbAmJu60iBXLMeZ9hHSYadqgtYyzZPYWJazefjQHG3EOz9h25ksC77tXVM3IBWpTabBoczB1OLfL5sbL7ma0+QddrdDuOrvQrNZ08ElyJtKAeA6FlIlZ7E4819k3PAX6uHZQJFIo5xJIy6MQKHWDIi3fFl6TvvyTStsS0x58al39en8QwC2kZhoxCG6zS5eDjzsjEs47zJ4sCLlD2WDM0F17Fqaw/bhGeSGJagJPTI+mHt/+G3w2DWeJKh6Hid3A1e0UseVj05RUxspAiJ+5N5BZUxESf6dDVeq07gysxAVngDq6bMTeTnuzN66PgIo4KO8E5cQFtWHxUQ8e5r9uqW/AsLIl6QrmRZgN6RybMunzogwKyghi2UGmsyXzVJ3HFvUBO6tmUr2Hr2t9lPoTGVNl57nGCRfEF+LqPRm7VkLkOQngydxjp9tCT1Hr3EglMwoY6n0CTXzssTo+Zi4X7KLs3FuR6eWCYdKftyt2Z6wHAGYJhWj8WsQEMPfMwP9M2p9p+mtelnQV8G++QdcaRBqDmr+bS8lbYLujMoGkrRVy+o6RiZ8EbOXdnjzvGPa047iRzuaetcRQeMmiPfncXH4vmThSrU6JqG+6FkLNgRDQQmJz3xCkuCs2QTqbmzzjiBfMuJO31TISlRLZqVrScHKHVkeDExBDcs4K+RMIA1oJJ4XMHJBvMNQkzUWzPYk6nKayKy4MjgF1aIFYucudDmCbJbn8jXkTA7mg06icEziDfEXREs+vaUHUeEWdHQ4m5Q/QcA5U505nvdu0lTWbd1v+eji/Iko3bQBRVaV4uuRtN2VgdbNtow2NYWCY9DkKftlxlz45OgqwmlOmzQ5W2VfcUT4MJ91A6HhIvGOqnpCrW7//NyDlHubTBv1V9IrkeJNIniRykaVTbvmwd0+/XjzdQuwe/kLSjDQ/xrmFOrHlimbN6Ez0WFft1hHfkRkhq1E4OK/9Q8wFCHuFDDILUJD79XJbbsuV75Bd1bDWdSHgVQhshFVMo5ajW2oU+t/8ZVMav9/MdlYiQDCgoOwgA/2/Ucr33Q0rlxgD",
+     "page_age": null,
+     "title": "Boarding (transport)",
+     "type": "web_search_result",
+     "url": "https://en.wikipedia.org/wiki/Boarding_(transport)"
+    },
+    {
+     "encrypted_content": "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",
+     "page_age": null,
+     "title": "TSA Wait Times Today",
+     "type": "web_search_result",
+     "url": "https://www.traveltsa.com/tsa-wait-times"
+    },
+    {
+     "encrypted_content": "EpAKCioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDOHVQMpoftaMDdZqlBoMmYJf5BbONxYTeWcSIjDNeyMROWKI3G5HzcIAXeRPAob1ssqyllY/0Wx5n6543hkXt7GNBvAa3PSHbdR6OMkqkwm3TyOSLYy4/NDyRWdOrJ+XC1d5gHuhJGBbItcpmpyiRLfG0MiDVGugh3/vyuVYT5jkS8N+mdGIEBVfA6PDfjdIzW6dmdQ1G5M2owH/2yC1SCtkg+RSu7HxVeN6Z2rXq/dPwihpV4tic7i2uJyQkNosHJ66jkhqyje44q+Kw8PcTW6XlylnTBXr1WNTy4JY6kTpQ2yjkuozgCfONUzUE+EB7kzWSAmqqwixaiYr+662HcF8j2p8SlJdNHLs/1+C9e+FS0LPT9nyOaEOxn/siRXta5mYptcVmKR2HIvj4HxKg0em3bqPcHueBCWXSdhRTpj6Bs3ctQQwShxXmIW5z1xybmQvezL6blNqwe2H+jZIZBU+slKOSS6IJEL7JhccOYlLbSHlsGvRYpwNfR0jrPRNzeT4fN1WAA7GTFGWjq2AVUfA7VmylRifTuj7YVimWQbvM1t6cz/1NY5Tfio+7yoU11XNnrXF/rWOqR1VbuLq9hAn2RhVu1YLolzJEPWxUHQMPraWy8TAu+iJ5Ck7h46f0af174TcpLn4qglnjHGeSzacQ6dUmRNgU6W2n0zsv4CrYhmo14QIVuqvcY8fcdA8qgPP5yKncmjiXY5u70jpPHza9/c8V5z8vEm3UDy4S9MQNyLJQkOEfFaGXyQHHJpDSHXSljEhBRtEpH8WWdDX8bG0Rqwj7arFBQH1GZ9DE7j0AqQ4osBOHzsEd6w4rSWNM8NU2k8QZxNSiyLvPimRN8brXa6tNfODANlFZI2iy1R/Q2NVtU90SQi9htUsAWDAbokp5pgZRNV94hbTF+lzaClW4thch6BDo5PqyYXOCVOI2Zmo4Hia/T9XnCdWpFrkdKdxfgWO7mVMebTyj5giW4LngERUzcx7w+W22++quV01hoPr0YxddonL88qwihnEQr6O7Nhlefc5RJH6XmEP4rTi9yDVLzQr6/WVODnU6zqg04MHHt56eVO4bmX2Z2IrBgaas+M6XQotUnuZop/N09NLc9HUEoXYVmeyVKXva6Ofqx/AddOi6xm+9ZAi+K12k+2QBUbt0Y41Xw+DI/CLFeBKxhd27mrbQ9cQe36ddoOZMLv9qODIswF+9sof+NAHOfq4WEYBHNxPd3Yr2ggTCTCHJmwXyZMc8S/zn8Hw+//AaTpxVhsup02fCLqoMB9543EeqeWTxJ0kMmZGwaqYRK6M3uBIH0+eDn8Kqp6ACKsp2G0CiWSmF5ePm79LD6iJ8Xi4/l6DpHZJttLBIW81bZs6qIL7MGS7dLnRi/k0tDHxg14fxGCF7Fx2V5WdyBEEdrKQuVlreFXJZfmD91tk+H8wrqbr1utie48ca6w7HjnZbA2fn5XLwKL8xNbZChMvOJxEjzb6hAAGS02v/AvLthQuySnwewVixyQY8zngAwYZwLrwSz/3Ty0IvkONKCjX9iW/hQ0CV1xDnJrAVT2JNRBchWqVVYF7Sbnfy/0os1iL+rmuM2/nT+p/jT8cBvh99C5qnDaEqCLnzvu4E7St3gsGflZUBzAzQllggVHX/RXeDQy6JvdtzJzR7wE2t4q3didnGAM=",
+     "page_age": null,
+     "title": "AirportWaitTime.com - Real-Time Airport Security Wait Times & Flight Delays",
+     "type": "web_search_result",
+     "url": "https://airportwaittime.com/"
+    },
+    {
+     "encrypted_content": "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",
+     "page_age": "162 days ago",
+     "title": "I built a free live TSA wait time tracker for major US airports - From the Tray Table",
+     "type": "web_search_result",
+     "url": "https://fromthetraytable.com/free-live-tsa-wait-time-tracker/"
+    },
+    {
+     "encrypted_content": "Eu4ICioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDN2hzxY6eZouXj8nJxoMVR+rzLg6yzaLLisaIjD9gVk271xYycbRBm3WDYIlQ67NVsT/PcKKbE3P0TDz66mQF3ACQtpvqc9AqKXcU+sq8Qe3avhz5gFUaPmX2cX6/h3YFacQ+5/y0U7TK3uYeQgAv/a18ZUPLZNC45ClXqS44d4b2JFUngoiwRY1bg+Ky1N0Ho0cmT9f+VVkTLrIRx6CGzpq+1JYxHVL5DibiJ3VZdfuZgS0Tx2q4zZ3PfQg50mxmXXUHSSpiDiBuSoB720tOkXq8ZsMl6tugO1vR4syTQjwNo77CeSAQIxixX9WZV3LusQR1Pkrmgf2YCqxEatDkFjbEj+GMt8kueNk8qzgbTFOCeHdKYsyJ9oU9An6Ku9xYqgTAgfpaPjy9etiShMMGENRStVC84Keyl9dX5Gf+Hx7bWK/ufC+HHU2MN2TaOOl8fHdM/u8dzm6evnYLLQidYtY2jV+6YoWAjRW6dQeAQM0xaGHvJaN767qeDILjWhlEzMGzQy70iIz7Gtv71DFiSfGKS5QTs/tIxuktaADaawUCBVZrf3EEqrokJ4/zpbS2auWH9tnmN8i0pou+/yI8ptqb+Vf32ZE9PWvzVJTNdJgDGOR9iHNmZdlf8lVAEypXUF5LoFlzMXGjMyY0042+oTlt5jSdAe3/PGLV8eOpAe6Xo/FeMFax/WjXkGh624Y4ISOjJl/jO6F+Lb8CYEUGfqLexW4iUxlkeohh+IY3IJq2NTSc7i/HyDhDmpKm3P10wLf1NVG3Iwx5NBYtJh6auaG3PLlbFzZ3Ak5ap+DIa+Qkpjl2i3s90tMR9NH67xFwfSug5T3Z9kQkAGvshcyGNBbW7H0X8NW0j9MAToHnlvwsnre6ez5Fmgt9orhKeCo80Lbl541PXEN85GY6mjsShF2+o2pbUm/TQCnu31U901cjS6QSukwlKPTuLwYYRPKigMa3t6TaQJITOVg4LyonLLKWnwUnLqg+axbl/sRT1IlmgxflGwN1jIj+sJI1NCIDUNq+qj7BOPgU/YLijxfVF/t2G6/MN919ACoGgLI4vmFkumOtmbsouqZRUcjuYLTKYyS9Qr0j+tFe9lFiOKWII9EJXRWFlt6iJqWDMU5FkQng4A9dRp7/5AhpGW0P9bYWqDgnPR8tU/Zlx0qpVqPyS+vCM0I4Y7WkYk/rTe0xjZ4k6pcO4/SHXkda7m2N1dxBF2Ssag4F0swud8TldsX3xCFogU+E5CFTl1KJP6Aho/hWykoegAnV1K1jsxGX0oQf34YKf1+2LG773YFpRwj6RxuQQH4I3uBU6mY0Hftz804PSeJe9HMoz8AMtKWcqL3O9gtjZuWQ2F6bdpw+SY/SUsxCDs+HEKLnw+97Nb0cU4qUa+yVcM3YpGZPzkXPyxMobr3WsrgsbeHFgHOAF0ePIq3Bp/OFsLNL2cUejQCfrL3GAM=",
+     "page_age": "271 days ago",
+     "title": "Collection & Use of Data",
+     "type": "web_search_result",
+     "url": "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/collection"
+    },
+    {
+     "encrypted_content": "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",
+     "page_age": null,
+     "title": "AirportWaits - Live Security, Customs & Precheck Wait Status",
+     "type": "web_search_result",
+     "url": "https://airportwaits.com/"
+    },
+    {
+     "encrypted_content": "EpUICioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDNxgFJ90A0YaGv0MjxoMLGHi/sSBcKmj5ENwIjDsN5c99yfbyt7wqrDL2K3+O5EC2r0J5TtgP3Gtvkt1ptuR4+IDgmCjzVBiBw4t1LQqmAdQrXpCb56VleouyE5mOhUJproQA8R8jLOBkBRJ5ByRNmhI1gkx4f6qCxUKw/IROYz8X94I+9pI++gBm8N82WJT4i2GlSooStSMguB3Wwje97j8LPIkVGuPc88KBkSWV1HKNY4bvbk0HgsPlvxWgbyLaub/nvactySO6j1wNoQ4t4smlgVpIH7YOOhZlHBtSued7IU7Uk984e9lZ8BWIwv9EbdBAmYGVNnFimakSUtZjmlTek+wKjafFpDs3t+CFw/3NYt4nMhFDLbTskcoHcIQfRm4LvUkHGi2izLpIuxGpI4dvPXqm1uwYpjagkQJDjJGOdPnPnrCFWcxscBide8pi5RZcz/UDaUn6y+kNA+5YrU4WGYLlnuDB51F4VptLwCzJ5UvsrrOk3Y/oWzSIRCpaZVgtq8Ct45lYAoKZtbmLyzm1X/GsDY+BRSznBWaUWtSslUQRinkO7Smloryd7Ow0Witmf6BVHGmiZ06VSF+PUlmoLM3eYZ9Ea62MVe9NpARaz6KpDKXyg5DUsHkVaRLyo7pqQ/97+9vlsMjfs5Tk4V1ixGzOfaxDHAPZ8wnyl4U9zeC2U9qLxVhZFJCXA57pwtsjVWj3luJoMHOp7ptJhsqTCYxoHfEvrKheJ4yqdL51CY/SU3Wno8TFAolCJyKCUcA8WupODbeM4pvkYYVFc+30ELAdYrH8UiLz8tf4dQX9x4JyBQkh1EZ6uRqDy7QYXBgjOoz7LzgNr2/Ci5qI9M1LTIZGMJLX3OH9XuI4rRVbSgm46foOkmx6XJo/1cvEeH5/OR/H7Wv9cMwyQS1TTYGynzdhkhooKOjRGJJhyoIAL/hjQRMXT7eN5BCNECDIsj/DNJ7JZ/is2sa5SXBK4i6Us5pTx8oE38nYkQXvvKeWl4NVbxwYIEvj2lLyJtHkLkgHp/0OBDH4epKSXXGXFxv+k+bMl4yZ7GgZUpCE9fdNCZ7ePgKuPF9xAOSjrttdWXQjzUhNm6fnYHw7ciM3K7WUggM/9KZ0HGg8ZwxFJq40xKG0t9LKBT8SNaIel3t5Va44uhvY++mnufhl9Js5kFF4ZllRUFj/UHNFzYOrLFcJB7p2rjJ+zSXzff8n1j9OSLCzPMvjkcOCCUW1SGYiJXlr6VstguaQIkW/6mGhAib/G92aTHC9HYWlKvaEkuw+p7nFPiHw6c+CBNCyLcOGSKhbaNLVzwqcf2N+vOjW6ZB7ta7pXyhQBgD",
+     "page_age": "1742 days ago",
+     "title": "Passenger Boarding (Enplanement) and All-Cargo Data for U.S. Airports",
+     "type": "web_search_result",
+     "url": "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger"
+    }
+   ],
+   "tool_use_id": "srvtoolu_01QnAX2ESSE4ScbJjTtD9GHt",
+   "type": "web_search_tool_result"
+  },
+  {
+   "signature": "CAQS+AgKEAgTGAI4AUIIdGhpbmtpbmcSDGw9mvKnauH4/9HGthoM8SvxkYNWgKWz7aUNIjCAHUTsl1sPGpQTHl1KHN/6+xhJYZzTiaFzUNlzf+B7mMkWQ+ELxCunOOg43xDHmZIqlQgq1ulN4TSulf3pn49lmviELl6PvV7TBFDGGokVCP5IS2qJqU6Evr+P3F/TlVDbuy7qfauhuKoHTrv4C7U6uL35Hn7jwilBMyX7tnAaBECkyDyUO8zH7xkXhoNW7nGA9IBWyG5QiS6dYqhy6NgC6nRsVfwdMmy1UgxqnH7TCHjduDWzgPL0zA9RA2/zip25oQ2t31qc1kJ4IYGjTY9H+XDf7TjgplPuwOVkFgCQt/ogQfZB3ch51h0lKzL6eGHq0pEQX/4aXrlWCGDWVtkqsC4xlhxYHpRJioHEEMVnYQioPSyLVnnH+Dsel4yXr0xG9E51x4MqvXiNKjdPT0T+jB5DhTREdSjrZRTi6haqD/YSVpI4ixjn8vKRBZXJ3Y3h+b9ynfYYbdb3G9mIm56ZUF8Ze47oUxv+wCMDGOXCc22G/dh46ddYevJtfiEcPSAkID48mJlpl6fW9b677LssEuQlzBKGXLl4Juanvuuwc6CQ60AanPbAtMS26CYjM/g+osUbEbzgYUfcVuLHSZY2GVczeW67zIz+Z44Xc2/+s2ug43Q0T66O2uxLLzAiv9mSKnLSsGSsN+IIyAZMOFruHqjFgpmiaLTQDCceaEN1JDYl704skIqPAjeTy6MLGtzkB5paFwSAp7fjjLDVZ4OCYBcItXKraCzmsAdN9TBGHwgmB4Y46rkfv5+xzVoOrb/WhjnUCXUrDLUNhwn1UACN6CMKJB7yGR3zh6YP2xanb+NPTWqqX/esp4rosTwKyp1jZjj4VgvEdPWO7OKxrZ+Kr7ZzoJngNRA7OikGxPGkY5qQXYvW2gEolC44eZDimZDpC8VNcM8RQ6/26vWWNBQuvCHSwYzxfd3yO35keTc1/c0i4GdLNjCfBNM4A7f90tCij+Hr+8Q1Czcs8mUI0hHTzyL+2/HoxkFimNkytAnkO+2WvvZXpvLYXTRBXki7ikSJdoVd6DDQSxX6dypBUBZvzjF+KJgRGV4i9iGh08KjhWBWXPNnV0yzB9WzugSYzX60MvQ4jU+DKTcqY3adhky/G4tDIzM7032UYtfQrU2vsO0vv3Olfj1OV9w5J+m7E2Ri+w+P/4liPp6DWMDut5JztKSNs7OS90fGI7OkhVDmp7AZmhNksoRBzwPQUviyjCEaFFz+88CI58wpMHoGzZ9fn2W8cBsnkWg7CUKpiDmgM3Rif/zjZQWF3YLNuzjCoYV20slX5T5ckVXV5O+mFvrzhsW/xsjHvFpMSNgplJ4rzrKgnDW3yiPAIKnDN4o3eZkAN5StcMSGpxytRZjcLOmHcg197Mc+UK1EyQ4iroO46qY1/yGgPxOAvJoCI1hvTs0v0aMhK6TD+mR43DoRMubP3rz6zvkRqSzixceQwtBb5akzlrSUPk3CGAE=",
+   "thinking": "",
+   "type": "thinking"
+  },
+  {
+   "text": "BoardFlight doesn't name a specific data feed in the material I found. Its homepage says its arrive-by times are ",
+   "type": "text"
+  },
+  {
+   "citations": [
+    {
+     "cited_text": "Arrive-by times are planning estimates built from historical and scheduled data, not guarantees, and they don’t include your travel time to the airpor...",
+     "encrypted_index": "EpABCioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDDob6SGBpC2+6HJz6xoMre3Py/kXUjCnzU/oIjA8mWhKDtOrhiNUC4lmEo3l9RzqE0bNAG+DagLXfsVV3iCkQXSrHQjEVtLZYvqooNcqFGin/C5x1uRbtJie+a1oqBomQNesGAQ=",
+     "title": "BoardFlight — the time to arrive for any US flight",
+     "type": "web_search_result_location",
+     "url": "https://www.boardflight.com/"
+    }
+   ],
+   "text": "planning estimates built from historical and scheduled data, not guarantees",
+   "type": "text"
+  },
+  {
+   "text": ". It also says that ",
+   "type": "text"
+  },
+  {
+   "citations": [
+    {
+     "cited_text": "Each step is estimated for your terminal and your hour, across 33 US airports. ",
+     "encrypted_index": "Eo8BCioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDIgqpSuGK1dlnZWwuhoMLfUBfA5ZCYUJvxqtIjAYWoQ26VFeD3lU8A6BkoFBWyIfHIF8mWZKapXlW+OCJviHbVGemUyqDUP3jm5TP+UqE73Hnhd3YmaPUQTp5CJ3HNdRoX0YBA==",
+     "title": "BoardFlight — the time to arrive for any US flight",
+     "type": "web_search_result_location",
+     "url": "https://www.boardflight.com/"
+    }
+   ],
+   "text": "each step is estimated for your terminal and your hour, across 33 US airports.",
+   "type": "text"
+  },
+  {
+   "text": "\n\nThe site also describes a second input: after a flight, travelers can report their security wait, and ",
+   "type": "text"
+  },
+  {
+   "citations": [
+    {
+     "cited_text": "Each report turns an estimate into a measurement for that airport, weekday, and hour. ",
+     "encrypted_index": "EpABCioIFRgCIiRlODM2MzNjOS1iOWU0LTQzMDgtOTY5ZS02MjU5ZGUwMWFjMjMSDAyyWPiuTjBGkJ3FghoMj1Pi8UrO6Fftx4oIIjC9FO8iLuKtrJUiEF7Uo7XMcOJY4KexSIOlkAEF/tzpc1pRg56EKlIpwz3r442v7OAqFM3kaaPYbQ2gh8+gdjDKsqsyPr05GAQ=",
+     "title": "BoardFlight — the time to arrive for any US flight",
+     "type": "web_search_result_location",
+     "url": "https://www.boardflight.com/"
+    }
+   ],
+   "text": "each report turns an estimate into a measurement for that airport, weekday, and hour.",
+   "type": "text"
+  },
+  {
+   "text": "\n\nFor the exact sources behind its numbers, such as whether it uses airport-published feeds, CBP data, or a commercial dataset, you'd need to check BoardFlight's terms of use or contact the company directly. I couldn't find that detail in my search.",
+   "type": "text"
+  }
+ ],
+ "diagnostics": null,
+ "id": "redacted",
+ "model": "claude-haiku-5-5",
+ "role": "assistant",
+ "stop_details": null,
+ "stop_reason": "end_turn",
+ "stop_sequence": null,
+ "type": "message",
+ "usage": {
+  "cache_creation": {
+   "ephemeral_1h_input_tokens": 0,
+   "ephemeral_5m_input_tokens": 0
+  },
+  "cache_creation_input_tokens": 0,
+  "cache_read_input_tokens": 0,
+  "inference_geo": "global",
+  "input_tokens": 13720,
+  "output_tokens": 548,
+  "output_tokens_details": {
+   "thinking_tokens": 209
+  },
+  "server_tool_use": {
+   "web_fetch_requests": 0,
+   "web_search_requests": 1
+  },
+  "service_tier": "standard",
+  "speed": "standard"
+ }
+}

@@ -257,8 +257,15 @@ def _not_checked_section(index, ctx):
     for r in index.of_kind("claim"):
         if r.get("verdict") in ("needs_review", "unsupported"):
             lines.append("- claim_%s: %s" % (r["verdict"], r["id"]))
+    # One line per statistic and n: a repeats-1 run otherwise lists the same
+    # line once per prompt. Each measurement keeps its scope under Measurements.
+    groups = {}
     for ins in ctx.insufficient:
-        lines.append("- insufficient: %s (n=%d, minimum %d)" % (ins.statistic_id, ins.n, ins.min_n))
+        key = (ins.statistic_id, ins.n, ins.min_n)
+        groups[key] = groups.get(key, 0) + 1
+    for (stat, n, min_n), count in groups.items():
+        lines.append("- insufficient: %s (n=%d, minimum %d)%s" % (
+            stat, n, min_n, " x%d, listed under Measurements" % count if count > 1 else ""))
     return lines
 
 

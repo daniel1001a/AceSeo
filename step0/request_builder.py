@@ -92,12 +92,20 @@ def _anthropic_messages_v1(engine, text):
     }
 
 
+PERPLEXITY_CITATION_INSTRUCTION = ("Cite your sources inline using bracketed markers, one source per bracket, "
+                                   "like [1][2].")
+
+
 def _perplexity_agent_v1(engine, text):
     # docs.perplexity.ai/docs/agent-api/tools/web-search.md; search_type "web" and
     # max_output_tokens from getting-started/pricing.md and agent-api/models.md
+    # The citation instruction is the documented one ("Want inline citations?"
+    # tip on tools/web-search.md, read 2026-10-20): format only, so the answer's
+    # [n] markers can be mapped to search_results ids. It asks nothing about content.
     shape = engine["request_shape"]
     return {
         "model": engine["model"],
+        "instructions": PERPLEXITY_CITATION_INSTRUCTION,
         "input": text,
         "tools": [{"type": "web_search", "search_type": shape["search_type"]}],
         "max_output_tokens": shape["max_output_tokens"],

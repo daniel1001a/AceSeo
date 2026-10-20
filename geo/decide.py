@@ -295,6 +295,9 @@ def not_checked_items(manifest, page_checks, claims, numbers, evaluations):
 def decide(index, created_at):
     """Build the decision record for a validated RunIndex. The caller appends it to the run."""
     m = index.manifest
+    if m["run_kind"] != "collect":
+        # Manual observations never feed rates or rules (geo/manual.py).
+        raise DecisionError("E_RUN_KIND", "decisions are made from collect runs only, not %r" % m["run_kind"])
     problems = threshold_problems(m["thresholds"])
     if problems:
         raise DecisionError("E_THRESHOLDS", "; ".join(problems))

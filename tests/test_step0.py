@@ -22,6 +22,15 @@ def load(name):
     return strict_load_path(os.path.join(DATA, name))
 
 
+def w5_10_prices():
+    """prices.json with the W5-10 planning inputs that CostTest pins."""
+    prices = load("prices.json")
+    prices["token_assumptions"] = {"label": "Estimated", "basis": "W5-10 planning inputs (tests only)",
+                                   "input_tokens_per_call": 1000, "output_tokens_per_call": 500,
+                                   "searches_per_call": 1}
+    return prices
+
+
 def build(opt_in=()):
     prompts = request_builder.load_prompts(load("prompts.json"))
     return request_builder.build_plan(load("engines.json"), prompts, 3, opt_in)
@@ -98,6 +107,7 @@ class RequestBuilderTest(unittest.TestCase):
             "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}]})
         self.assertEqual(request_builder.build_request(engines["perplexity"], p)["body"], {
             "model": "perplexity/sonar", "input": p["text"],
+            "instructions": request_builder.PERPLEXITY_CITATION_INSTRUCTION,
             "tools": [{"type": "web_search", "search_type": "web"}], "max_output_tokens": 1024})
 
     def test_unverified_engine_writes_no_request(self):
@@ -166,7 +176,7 @@ class CostTest(unittest.TestCase):
 
     def test_w5_10_expected_values(self):
         plan, _ = build(["perplexity"])
-        est = cost.estimate(plan["slots"], load("engines.json"), load("prices.json"), "1.00")
+        est = cost.estimate(plan["slots"], load("engines.json"), w5_10_prices(), "1.00")
         rows = {r["engine"]: r for r in est["engines"]}
         self.assertEqual(Decimal(rows["openai"]["per_call_total_usd"]), Decimal("0.01125"))
         self.assertEqual(Decimal(rows["anthropic"]["per_call_total_usd"]), Decimal("0.01035"))
@@ -179,23 +189,23 @@ class CostTest(unittest.TestCase):
         self.assertEqual(est["status"], "within_cap_estimated")
 
         plan, _ = build()
-        est = cost.estimate(plan["slots"], load("engines.json"), load("prices.json"), "1.00")
+        est = cost.estimate(plan["slots"], load("engines.json"), w5_10_prices(), "1.00")
         self.assertEqual(Decimal(est["total_usd"]), Decimal("0.648"))
         self.assertEqual(Decimal(est["search_fee_total_usd"]), Decimal("0.6"))
 
     def test_outputs_are_strings_not_floats(self):
         plan, _ = build()
-        est = cost.estimate(plan["slots"], load("engines.json"), load("prices.json"), "1.00")
+        est = cost.estimate(plan["slots"], load("engines.json"), w5_10_prices(), "1.00")
         strict_loads(canonical_bytes(est).decode("utf-8"))  # raises on any float
 
     def test_over_cap_flagged(self):
         slots = [s for s in build()[0]["slots"] if s["engine"] == "openai"]
-        est = cost.estimate(slots, load("engines.json"), load("prices.json"), "0.30")
+        est = cost.estimate(slots, load("engines.json"), w5_10_prices(), "0.30")
         self.assertEqual(est["status"], "over_budget")
 
     def test_upper_bound_only_where_search_cap_documented(self):
         plan, _ = build()
-        est = cost.estimate(plan["slots"], load("engines.json"), load("prices.json"), "1.00")
+        est = cost.estimate(plan["slots"], load("engines.json"), w5_10_prices(), "1.00")
         rows = {r["engine"]: r for r in est["engines"]}
         self.assertEqual(Decimal(rows["anthropic"]["search_fee_upper_usd"]), Decimal("0.9"))
         self.assertIsNone(rows["openai"]["search_fee_upper_usd"])
@@ -203,17 +213,17 @@ class CostTest(unittest.TestCase):
         self.assertEqual(est["search_fee_unbounded_engines"], ["openai"])
 
     def test_missing_price_source_refuses_total(self):
-        prices = load("prices.json")
+        prices = w5_10_prices()
         prices["prices"]["openai.gpt-5-mini"]["sources"] = []
         with self.assertRaises(cost.PriceSourceError):
             cost.estimate(build()[0]["slots"], load("engines.json"), prices, "1.00")
-        prices = load("prices.json")
+        prices = w5_10_prices()
         prices["prices"]["openai.gpt-5-mini"]["sources"][0]["retrieved"] = ""
         with self.assertRaises(cost.PriceSourceError):
             cost.estimate(build()[0]["slots"], load("engines.json"), prices, "1.00")
 
     def test_haiku_tier_over_100k_prompt_tokens(self):
-        entry = load("prices.json")["prices"]["anthropic.claude-haiku-5-5"]
+        entry = w5_10_prices()["prices"]["anthropic.claude-haiku-5-5"]
         base = {"input_tokens_per_call": 100000, "output_tokens_per_call": 0, "searches_per_call": 0}
         over = dict(base, input_tokens_per_call=100001)
         self.assertEqual(cost.per_call(entry, base)[0], Decimal("0.01"))
@@ -226,8 +236,8 @@ class DryRunTest(unittest.TestCase):
                    PERPLEXITY_API_KEY=SENTINEL)
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, env), _NoNetwork():
             out_a, out_b = os.path.join(tmp, "a"), os.path.join(tmp, "b")
-            code_a, text_a = run_quiet(opt_in=["perplexity"], out_dir=out_a)
-            code_b, _ = run_quiet(opt_in=["perplexity"], out_dir=out_b)
+            code_a, text_a = run_quiet(opt_in=["perplexity"], cap_usd="5", out_dir=out_a)
+            code_b, _ = run_quiet(opt_in=["perplexity"], cap_usd="5", out_dir=out_b)
             self.assertEqual((code_a, code_b), (dryrun.EXIT_OK, dryrun.EXIT_OK))
             written = all_bytes_under(out_a)
             self.assertEqual(written, all_bytes_under(out_b))
@@ -252,7 +262,7 @@ class DryRunTest(unittest.TestCase):
 
     def test_existing_out_dir_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
-            code, _ = run_quiet(out_dir=tmp)
+            code, _ = run_quiet(cap_usd="5", out_dir=tmp)
             self.assertEqual(code, dryrun.EXIT_OUT_EXISTS)
             self.assertEqual(os.listdir(tmp), [])
 
