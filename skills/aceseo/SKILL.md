@@ -1,13 +1,13 @@
 ---
-name: geo-evidence
-description: Check what AI answer engines (OpenAI and Anthropic web search APIs, optionally Perplexity) say about a website and turn it into a traceable recommendation, using the geo-evidence command line tool. Use when someone asks whether ChatGPT, Claude or other AI search cites their site, whether AI answers get facts about their business wrong, whether to work on SEO or GEO (generative engine optimization) first, or wants to set up, cost, run or read a geo-evidence run. Writes the prompts and facts files with the user, plans the run for free, runs it live only after the user confirms the cost and has set their own keys, and explains the report with its evidence ids. Also covers recording answers from surfaces with no API (Google AI Overviews) by hand. Does not change the site, does not produce a visibility score.
+name: aceseo
+description: Check what AI answer engines (OpenAI and Anthropic web search APIs, optionally Perplexity) say about a website and turn it into a traceable recommendation, using the AceSeo command line tool. Use when someone asks whether ChatGPT, Claude or other AI search cites their site, whether AI answers get facts about their business wrong, whether to work on SEO or GEO (generative engine optimization) first, or wants to set up, cost, run or read an AceSeo run. Writes the prompts and facts files with the user, plans the run for free, runs it live only after the user confirms the cost and has set their own keys, and explains the report with its evidence ids. Also covers recording answers from surfaces with no API (Google AI Overviews) by hand. Does not change the site, does not produce a visibility score.
 ---
 
-# geo-evidence: evidence-first AI search checks
+# AceSeo: evidence-first AI search checks
 
 You are helping a site owner find out what AI answer engines say about their site and what, if anything, to fix first. The tool does the measuring and deciding; your job is to set it up correctly, keep the spend under control, and explain the result without adding claims the evidence does not support.
 
-Run every command from the root of the geo-evidence repository (the folder holding `geo/` and `README.md`). It needs Python 3.9 or newer and nothing else.
+Run every command from the root of the AceSeo repository (the folder holding `geo/` and `README.md`). It needs Python 3.9 or newer and nothing else.
 
 ## Ground rules
 

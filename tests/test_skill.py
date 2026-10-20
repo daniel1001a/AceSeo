@@ -36,7 +36,7 @@ def frontmatter(text):
 
 class SkillFormat(unittest.TestCase):
     def test_there_is_a_skill(self):
-        self.assertEqual([os.path.basename(os.path.dirname(p)) for p in SKILLS], ["geo-evidence"])
+        self.assertEqual([os.path.basename(os.path.dirname(p)) for p in SKILLS], ["aceseo"])
 
     def test_frontmatter_and_size(self):
         for path in SKILLS:

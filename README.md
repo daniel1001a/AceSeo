@@ -1,9 +1,9 @@
-# geo-evidence
+# AceSeo
 
 Check what AI answer engines say about your site, and get a recommendation you
 can trace back to the evidence.
 
-geo-evidence asks the official APIs of AI models with web search (OpenAI,
+AceSeo asks the official APIs of AI models with web search (OpenAI,
 Anthropic, and Perplexity if you opt in) a set of questions about your site,
 checks your key pages the way a crawler would, and compares every answer
 against a facts file you control. It then applies a fixed cascade of rules and
@@ -29,18 +29,20 @@ What makes it different:
 It does not change your site, does not produce a visibility score, and does not
 need an account anywhere except the API keys you already have.
 
-Status (2026-10-20): the full pipeline runs offline against SYNTHETIC provider
-responses and is covered by tests. It has not yet been run against the live
-APIs; see `READY_FOR_LIVE.md` for the pre-flight checklist and what is still
-`unverified` or `Estimated`.
+Status (2026-10-20): the pipeline has run once against real Anthropic API
+responses (`--repeats 1`, one site), covered by tests replaying those
+responses as fixtures. OpenAI has not been verified against a real response
+yet (the account had no credit; see `PROGRESS.md` Step 13). Perplexity is
+still offline-only. Thresholds remain `provisional`. See `READY_FOR_LIVE.md`
+for what is still `unverified` or `Estimated`.
 
 ## Install
 
 Python 3.9 or newer. Nothing else.
 
 ```
-git clone <this repo> geo-evidence
-cd geo-evidence
+git clone <this repo> aceseo
+cd aceseo
 python3 -m unittest discover -s tests -q
 ```
 
@@ -239,7 +241,7 @@ is wrong, a run does not validate, or a file it would write already exists.
 
 ## Use it from Claude Code
 
-`skills/geo-evidence/` is a Claude Code skill that walks an agent through
+`skills/aceseo/` is a Claude Code skill that walks an agent through
 writing the inputs, planning, running (only after you confirm the cost) and
 explaining the report. Copy the folder into `.claude/skills/` of this
 repository, or into `~/.claude/skills/` to have it everywhere, then ask
@@ -254,7 +256,7 @@ skill runs the commands above; it never asks for your keys in the chat.
 - `design/`, `research/`: the data model, facts schema, API terms research and
   test plan the code follows.
 - `examples/`: input templates and the SYNTHETIC example run.
-- `skills/geo-evidence/`: a Claude Code skill that drives this tool.
+- `skills/aceseo/`: a Claude Code skill that drives this tool.
 - `PROGRESS.md`, `READY_FOR_LIVE.md`: build log and live-run checklist.
 
 ## License

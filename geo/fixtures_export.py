@@ -18,7 +18,12 @@ from .adapters import ADAPTERS
 from .canonical import canonical_bytes, sha256_hex
 from .validate import load_valid_run
 
-REDACT_KEYS = ("id", "user", "safety_identifier", "prompt_cache_key", "metadata", "previous_response_id")
+# id..previous_response_id: account/session identifiers. signature,
+# encrypted_content, tool_use_id: opaque per-response provider blobs the
+# adapters never read; dropped so the fixtures do not carry them for no
+# reason (release cleanup, 2026-10-20).
+REDACT_KEYS = ("id", "user", "safety_identifier", "prompt_cache_key", "metadata", "previous_response_id",
+               "signature", "encrypted_content", "tool_use_id")
 REDACTED = "redacted"
 INDEX = "index.json"
 
