@@ -1,9 +1,6 @@
 # AceSeo
 
-[![test](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml/badge.svg)](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml)
-[![License: MIT](https://img.shields.io/github/license/daniel1001a/AceSeo)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/daniel1001a/AceSeo)](https://github.com/daniel1001a/AceSeo/releases/latest)
-![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+[![test](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml/badge.svg)](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml) [![License: MIT](https://img.shields.io/github/license/daniel1001a/AceSeo)](LICENSE) [![Release](https://img.shields.io/github/v/release/daniel1001a/AceSeo)](https://github.com/daniel1001a/AceSeo/releases/latest) ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 
 Check what AI answer engines say about your site, and get a recommendation you
 can trace back to the evidence.
