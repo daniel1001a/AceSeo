@@ -2,7 +2,7 @@
 
 Empty until a real run is exported. To fill it:
 
-    python3 -m geo.cli collect --live ...            # see READY_FOR_LIVE.md
+    python3 -m geo.cli collect --live ...            # see docs/READY_FOR_LIVE.md
     python3 -m geo.cli export-fixtures runs/<run_id> # writes here
 
 `export-fixtures` replaces identifier fields (`id`, `user`, `safety_identifier`,

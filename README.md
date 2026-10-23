@@ -1,5 +1,7 @@
 # AceSeo
 
+[![test](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml/badge.svg)](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml) [![License: MIT](https://img.shields.io/github/license/daniel1001a/AceSeo)](LICENSE) [![Release](https://img.shields.io/github/v/release/daniel1001a/AceSeo)](https://github.com/daniel1001a/AceSeo/releases/latest) ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+
 Check what AI answer engines say about your site, and get a recommendation you
 can trace back to the evidence.
 
@@ -32,19 +34,74 @@ need an account anywhere except the API keys you already have.
 Status (2026-10-20): the pipeline has run once against real Anthropic API
 responses (`--repeats 1`, one site), covered by tests replaying those
 responses as fixtures. OpenAI has not been verified against a real response
-yet (the account had no credit; see `PROGRESS.md` Step 13). Perplexity is
-still offline-only. Thresholds remain `provisional`. See `READY_FOR_LIVE.md`
+yet (the account had no credit; see `docs/PROGRESS.md` Step 13). Perplexity is
+still offline-only. Thresholds remain `provisional`. See `docs/READY_FOR_LIVE.md`
 for what is still `unverified` or `Estimated`.
+
+## Who it's for
+
+- Site owners and marketers who want to know what AI models with web search
+  (OpenAI, Anthropic, and Perplexity if you opt in, through their official
+  APIs) say about their site, and whether those answers contradict the site's
+  own facts.
+- SEO and GEO/AEO practitioners who need every number in a report to carry its
+  sample size and the evidence ids it came from.
+- Developers who want a dependency-free Python CLI they can run locally, or
+  drive from Claude Code with the bundled skill (`skills/aceseo/`).
+
+## Quickstart in 30 seconds (offline, no API key)
+
+```
+git clone https://github.com/daniel1001a/AceSeo.git
+cd AceSeo
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e .
+aceseo report examples/synthetic/runs/run_20261019T210001Z_6f7d91
+```
+
+This re-renders the SYNTHETIC example run shipped in `examples/synthetic/`
+(built offline with fake keys). Nothing is sent anywhere. The start of the
+output:
+
+```
+# GEO evidence report
+
+Run: run_20261019T210001Z_6f7d91 (transport fixture)
+
+## Recommendation
+
+GEO first: fix facts. The same claim that contradicts the site's own facts, or
+repeats a value the facts mark as outdated, appears in enough answers to pass
+the reproduction threshold. Make the correct fact easier to find and quote.
+(draft wording, not yet reviewed against a live run) The deciding rule is the
+reproduced fact contradictions rule. Decision record:
+[dec_site_d9c5630060e9fcf0]. ...
+
+## Contradicted or outdated claims
+
+- [clm_anthropic_e8f3745417a01eed] is contradicted against fact [fct_56a31299045fdc1c], in capture [cap_anthropic_2b1d0e3b4f85174b]
+- [clm_anthropic_f4528eb01c1d2c09] is contradicted against fact [fct_56a31299045fdc1c], in capture [cap_anthropic_31ffa694bd40ea94]
+...
+```
+
+The full report is in [`examples/synthetic/report.md`](examples/synthetic/report.md).
 
 ## Install
 
 Python 3.9 or newer. Nothing else.
 
 ```
-git clone <this repo> aceseo
-cd aceseo
+git clone https://github.com/daniel1001a/AceSeo.git
+cd AceSeo
+pip install -e .
 python3 -m unittest discover -s tests -q
 ```
+
+`pip install -e .` adds an `aceseo` command (the same as `python3 -m geo.cli`).
+Use the editable install: the tool reads `step0/data/` and writes `runs/`
+inside the repository, so a plain `pip install .` can render reports but
+cannot plan or run a collection. You can also skip installing and use
+`python3 -m geo.cli` from the repository root.
 
 ## See a complete example first
 
@@ -257,7 +314,13 @@ skill runs the commands above; it never asks for your keys in the chat.
   test plan the code follows.
 - `examples/`: input templates and the SYNTHETIC example run.
 - `skills/aceseo/`: a Claude Code skill that drives this tool.
-- `PROGRESS.md`, `READY_FOR_LIVE.md`: build log and live-run checklist.
+- `docs/`: the build plan (`PLAN.md`), build log (`PROGRESS.md`) and live-run
+  checklist (`READY_FOR_LIVE.md`).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) for API key
+handling, and [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

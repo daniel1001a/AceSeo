@@ -4,15 +4,35 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aceseo"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Local-first, rule-first SEO checks and AI-search citation evidence."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = []
+authors = [{ name = "Ming" }]
+keywords = ["seo", "geo", "aeo", "ai-search", "generative-engine-optimization", "llm", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+
+[project.scripts]
+aceseo = "geo.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/daniel1001a/AceSeo"
+Repository = "https://github.com/daniel1001a/AceSeo"
+Issues = "https://github.com/daniel1001a/AceSeo/issues"
+Changelog = "https://github.com/daniel1001a/AceSeo/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
-include = ["geo*"]
+include = ["geo*", "step0*"]
