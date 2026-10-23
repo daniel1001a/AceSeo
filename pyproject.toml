@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = []
-authors = [{ name = "danielisgod" }]
+authors = [{ name = "Ming" }]
 keywords = ["seo", "geo", "aeo", "ai-search", "generative-engine-optimization", "llm", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",

@@ -23,11 +23,11 @@ What you should do:
 
 ## Reporting a vulnerability
 
-Please do not open a public issue for a security problem, such as a path where
-a key could reach disk or output. Use GitHub's "Report a vulnerability"
-(private vulnerability reporting) on this repository if it is enabled, or
-contact the maintainer, [@daniel1001a](https://github.com/daniel1001a), on
-GitHub.
+Please report vulnerabilities privately through GitHub private vulnerability
+reporting: open the repository's **Security** tab and choose **Report a
+vulnerability**. Do not open a public issue, pull request or discussion with
+details of a vulnerability, such as a path where a key could reach disk or
+output.
 
 ## Supported versions
 

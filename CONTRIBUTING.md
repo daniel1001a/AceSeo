@@ -32,5 +32,5 @@ Design background is in `design/`, `research/` and `docs/`.
 ## Pull requests
 
 Describe what changed and why, run the tests, and fill in the checklist in the
-pull request template. Report security problems privately; see
-[SECURITY.md](SECURITY.md).
+pull request template. Report security problems privately through GitHub private vulnerability
+reporting, not in a public issue; see [SECURITY.md](SECURITY.md).
