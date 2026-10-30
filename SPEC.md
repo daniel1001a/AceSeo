@@ -108,6 +108,11 @@ service, multi-site or agency features, LLM-decided verdicts.
 P1 now. P0 when credit is available. Then P2 (largest), P3, P4. MCP server
 after P4 if the skill sees use.
 
+Actual: P1, P2, P3, P4 done 2026-10-30 (section 6), out of order relative to
+D4 because they needed no credit. P0 is the only item still blocked on the
+owner adding OpenAI credit. MCP server remains undecided, pending use of the
+skill.
+
 ## 6. Status and changes from the plan (2026-10-30)
 
 - P1 done (commit 3fdd57a).
@@ -132,3 +137,27 @@ after P4 if the skill sees use.
   shows every statistic the decision recorded, not only mention and citation
   rates.
 - Still needs API credit: `collect --live` and P0.
+
+## 7. Remaining work
+
+Only P0 is open, and it is gated on the owner adding OpenAI credit
+(the account has none; `PROGRESS.md` Step 13). Nothing else in this spec is
+blocked. When credit is available:
+
+1. Export fixtures from a BoardFlight run (`--prompts step0/data/boardflight.prompts.json
+   --facts design/boardflight.facts.sample.json --repeats 3`, engines
+   anthropic + openai, `--cap-usd 2`), live.
+2. Move every OpenAI field the run actually returns from `unverified` to
+   `live` in `geo/facts.py: FIELD_STATUS` (follow the pattern used for
+   Anthropic in PROGRESS.md Step 13).
+3. Compare the real per-engine n and rates against the thresholds in
+   `geo/number.py`; change a threshold only when the run's own numbers show
+   it is wrong, citing the run id as the source. Do not change a threshold
+   on the OpenAI run's say alone if repeats or sample size do not support it.
+4. Record the outcome (changed or kept, with reason) in `READY_FOR_LIVE.md`
+   section 6, and add a PROGRESS.md step.
+5. Re-run the full suite and `export-fixtures`; commit the new fixtures and
+   docs.
+
+MCP server: no action until the Claude Code skill (`skills/aceseo/`) has
+seen real use; revisit D3 then.
