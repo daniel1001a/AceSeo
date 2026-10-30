@@ -320,3 +320,21 @@ Files: `geo/{claims,facts,proposals,init,diff,store,validate,runindex,render,cli
 No API call was made. `collect --live` and P0 still need API credit.
 
 Tests: 339 run, OK, 1 skipped.
+
+## Step 16: P5, re-import BoardFlight with declared facts (done 2026-10-30)
+
+Files: `design/boardflight.facts.json` (new), `runs/p5-before/`, `runs/p5-after/` (gitignored, not committed).
+
+- `design/boardflight.facts.json` drafted with `aceseo init https://www.boardflight.com/` and completed by hand: `site_status`, `llms.offer.is_free`, `jsonld.organization.same_as`, plus declared `match` blocks for `llms.coverage.airport_count` and `llms.data.uses_live_queue_data`. `design/boardflight.facts.sample.json` (fixtures depend on it) was not touched.
+- Re-imported `design/manual/chatgpt-app-2026-10-30.answer.txt` twice with `import-manual`, same flags, only the facts file changed.
+  - Before (`design/boardflight.facts.sample.json`, run `run_20261030T164000Z_4a1a4e` under `runs/p5-before/`): 7 claims, 0 matched (6 needs_review, 1 unsupported).
+  - After (`design/boardflight.facts.json`, run `run_20261030T164000Z_4a1a4e` under `runs/p5-after/`): 9 claims, 2 matched directly by the rule matcher (`llms.offer.is_free=true` normalized, `llms.coverage.airport_count=61` exact), 7 needs_review.
+- Step 7 (SKILL.md): wrote two proposals for the remaining undecided sentences (live-queue-data sentence, airport-count table row), imported them with `propose-claims` (both listed, not counted). Tested `confirm` on a scratch copy only; both refused by the tool before any write:
+  - Table row: fails the entity check (`_entity()`), not fixable by a facts-file phrase.
+  - Live-queue-data sentence: collides with the built-in `site_status` topic (`_STATUS_NEG` in `geo/claims.py` matches bare "not live" as a substring), a two-topic hit the matcher always sends to needs_review. Code-level, not a facts-file fix; left as a finding, not acted on.
+  - No facts file was ever written by `confirm`; the real `design/boardflight.facts.json` is unchanged since its initial draft.
+- `runs/p5-before/` and `runs/p5-after/` stay under the gitignored `runs/`, not under `examples/` (that directory holds only the synthetic, deterministic demo checked byte-for-byte by `tests/test_example.py`).
+
+Of the three facts P5 targeted, 2 are now matched directly from this answer; the third (`llms.data.uses_live_queue_data`) stays needs_review for this particular answer, with the root cause above.
+
+Tests: 339 run, OK, 1 skipped.

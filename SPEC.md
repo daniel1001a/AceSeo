@@ -1,6 +1,6 @@
 # SPEC.md: AceSeo v0.2
 
-Status: agreed 2026-10-30. P1 to P4 implemented 2026-10-30 (section 6); P0 waits for OpenAI credit. Supersedes nothing in PLAN.md; it sets the next
+Status: agreed 2026-10-30. P1 to P4 implemented 2026-10-30 (section 6); P5 and P6 added 2026-10-30 (section 7); P0 waits for OpenAI credit. Supersedes nothing in PLAN.md; it sets the next
 work after the MVP (PROGRESS.md Steps 1 to 13).
 
 ## 1. Decisions
@@ -109,7 +109,8 @@ P1 now. P0 when credit is available. Then P2 (largest), P3, P4. MCP server
 after P4 if the skill sees use.
 
 Actual: P1, P2, P3, P4 done 2026-10-30 (section 6), out of order relative to
-D4 because they needed no credit. P0 is the only item still blocked on the
+D4 because they needed no credit. P5 and P6 (section 7) came from the first
+ChatGPT import and need no credit. P0 is the only item blocked on the
 owner adding OpenAI credit. MCP server remains undecided, pending use of the
 skill.
 
@@ -140,12 +141,82 @@ skill.
 
 ## 7. Remaining work
 
-Only P0 is open, and it is gated on the owner adding OpenAI credit
-(the account has none; `PROGRESS.md` Step 13). Nothing else in this spec is
-blocked. When credit is available:
+Open: P5 and P6 (no credit needed, do these first), then P0 (gated on the
+owner adding OpenAI credit; the account has none, `PROGRESS.md` Step 13).
+MCP server stays deferred.
 
-1. Export fixtures from a BoardFlight run (`--prompts step0/data/boardflight.prompts.json
-   --facts design/boardflight.facts.sample.json --repeats 3`, engines
+### P5. Current BoardFlight facts and the first ChatGPT import (no credit)
+
+Source: on 2026-10-30 the owner asked ChatGPT (app, search on) the 5
+questions in `design/manual/chatgpt-app-2026-10-30.query.txt`; the cleaned
+answer is `design/manual/chatgpt-app-2026-10-30.answer.txt` (copy noise such
+as `&#x20;`, `\.` and favicon lines removed, wording unchanged; citations it
+showed: home, /methodology, /airports, /how-it-works, /terms and
+github.com/daniel1001a/boardflight-airport-wait-data). Checked by hand
+against the live llms.txt and /methodology the same day: every checkable
+statement was correct (live site, free with no account, 61 airports, no
+live queue data, 16 of 61 pass the TSA check, 28 profiled since the last
+check unscored). Imported with the sample facts it gave 7 claims, 0 decided
+(6 `needs_review`, 1 `unsupported`).
+
+Why 0 decided, and what to change:
+- `design/boardflight.facts.sample.json` is dated 2026-10-19 and says 33
+  airports; the site now says 61 (33 is now the TSA-check count). The sample
+  is tied to the recorded fixtures and `tests/geo_fixtures.py: FACTS_PATH`,
+  so do not edit it. Add a new file, `design/boardflight.facts.json`,
+  drafted with `aceseo init https://www.boardflight.com/` and then completed
+  by hand, for live and manual runs from now on.
+- Facts the new file must declare, each with a `match` block (README
+  "Declaring facts"): `llms.coverage.airport_count` = 61 with subject_terms
+  including "lists" and "profiled" as well as "cover/covers"; the free,
+  no-account offer (built-in `llms.offer.is_free` = true); and a boolean
+  `llms.data.uses_live_queue_data` = false whose negative phrases include
+  "no live queue data", "not live measurements", "no real-time checkpoint
+  queue lengths".
+- Re-import the saved answer with the new facts file (`import-manual`,
+  `--surface chatgpt-app --vendor openai --observed-at 2026-10-30T16:40:00Z`,
+  the query file's text as `--query`, mention terms BoardFlight,
+  www.boardflight.com, boardflight.com, the six URLs above as `--cite`).
+  For sentences still undecided, run the Step 7 workflow in
+  `skills/aceseo/SKILL.md` (`propose-claims`, then `confirm` only for what
+  the owner agrees with).
+- Done when: the re-import decides the airport count, the free offer and
+  live-queue-data sentences as `matched`; the run directory is outside the
+  repo or committed under `examples/`, the owner decides which; full suite
+  passes; a PROGRESS.md step records the run id and the before/after counts.
+
+### P6. BoardFlight llms.txt wording (other repo: ~/Projects/boardflight)
+
+The owner wants the site to say the prediction is computed live. True: the
+flight, terminal and departure time are looked up live per request (home
+page already says "Computed live for this flight"), and hourly curves use
+live schedule data when available. Not true: the security wait is modeled
+from historical and scheduled patterns; /methodology says "no real-time
+checkpoint queue lengths". Do not call the prediction or wait times
+"real-time"; that would contradict /methodology and is what engines would
+then report as inconsistent.
+
+- Change only the second paragraph built in `lib/seo/llms-txt.ts`
+  (`buildLlmsTxt`) to: "Each plan is computed for your flight when you ask:
+  BoardFlight looks up the flight, terminal and departure time live, then
+  adds curb-to-check-in time, bag drop if you have a bag, a modeled security
+  wait for that airport and hour (read at the ${percentile} percentile, so it
+  plans for a slower-than-usual day), and the walk to the gate. The security
+  wait is modeled from historical and scheduled patterns; it uses no live
+  queue data. Airline check-in and boarding deadlines always come first."
+- Leave /methodology and the home page as they are.
+- Run that repo's tests and lint; update any test that pins the old text.
+  Show the owner the diff; commit only when asked (that repo's own rules
+  apply, read its AGENTS.md and CLAUDE.md first).
+- After it is deployed, add a `llms.data.flight_lookup_is_live` = true fact
+  to `design/boardflight.facts.json` if the owner wants it checked.
+
+### P0. Real-data validation (needs OpenAI credit)
+
+Check first that the owner has added OpenAI credit; if not, stop. Then:
+
+1. Export fixtures from a BoardFlight run (`--prompts step0/data/prompts.json
+   --facts design/boardflight.facts.json` (from P5) `--repeats 3`, engines
    anthropic + openai, `--cap-usd 2`), live.
 2. Move every OpenAI field the run actually returns from `unverified` to
    `live` in `geo/facts.py: FIELD_STATUS` (follow the pattern used for

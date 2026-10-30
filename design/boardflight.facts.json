@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "site": {
+    "name": "BoardFlight",
+    "canonical_origin": "https://www.boardflight.com",
+    "hosts": [
+      "www.boardflight.com",
+      "boardflight.com"
+    ],
+    "note": "Drafted 2026-10-30 with `aceseo init https://www.boardflight.com/`, then completed by hand per SPEC.md section 7 P5. For live and manual runs from now on; design/boardflight.facts.sample.json stays as recorded (tests/geo_fixtures.py: FACTS_PATH) and is not edited."
+  },
+  "facts": [
+    {
+      "key": "site_status",
+      "value": "live",
+      "value_type": "enum",
+      "enum_values": ["live", "redirect_only", "error", "unreachable"]
+    },
+    {
+      "key": "llms.offer.is_free",
+      "value": true,
+      "value_type": "boolean"
+    },
+    {
+      "key": "jsonld.organization.same_as",
+      "value": [
+        "https://github.com/daniel1001a/boardflight-airport-wait-data",
+        "https://www.linkedin.com/company/boardflight-fly"
+      ],
+      "value_type": "string_list"
+    },
+    {
+      "key": "llms.coverage.airport_count",
+      "value": 61,
+      "value_type": "integer",
+      "match": {
+        "subject_terms": ["lists", "profiled", "cover", "covers"],
+        "unit_terms": ["airports"]
+      }
+    },
+    {
+      "key": "llms.data.uses_live_queue_data",
+      "value": false,
+      "value_type": "boolean",
+      "match": {
+        "positive": [],
+        "negative": ["no live queue data", "not live measurements", "no real-time checkpoint queue lengths"]
+      }
+    }
+  ]
+}
