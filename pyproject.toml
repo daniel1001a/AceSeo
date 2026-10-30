@@ -11,8 +11,14 @@ license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = []
 
+[project.scripts]
+aceseo = "geo.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/daniel1001a/AceSeo"
 
 [tool.setuptools.packages.find]
-include = ["geo*"]
+include = ["geo*", "step0*"]
+
+[tool.setuptools.package-data]
+step0 = ["data/*.json"]

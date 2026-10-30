@@ -24,23 +24,21 @@ from .fetch import UrllibFetcher
 from .validate import ValidationError, load_valid_run
 from step0 import request_builder
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "step0", "data")
-SAMPLE_FACTS = os.path.join(ROOT, "design", "boardflight.facts.sample.json")
+DATA = os.path.join(os.path.dirname(os.path.abspath(request_builder.__file__)), "data")
 KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY",
            "perplexity": "PERPLEXITY_API_KEY"}
 
 
 def _parser():
-    p = argparse.ArgumentParser(prog="geo", description="Evidence-first AI answer checks for one site.")
+    p = argparse.ArgumentParser(prog="aceseo", description="Evidence-first AI answer checks for one site.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("collect", help="plan (default) or run live (--live)")
     c.add_argument("--engines", default=os.path.join(DATA, "engines.json"))
     c.add_argument("--prices", default=os.path.join(DATA, "prices.json"))
-    c.add_argument("--prompts", default=os.path.join(DATA, "prompts.json"))
-    c.add_argument("--facts", default=SAMPLE_FACTS)
-    c.add_argument("--out", default=os.path.join(ROOT, "runs"), help="runs root directory")
+    c.add_argument("--prompts", required=True, help="prompts.json (see examples/minimal)")
+    c.add_argument("--facts", required=True, help="facts.json (see examples/minimal)")
+    c.add_argument("--out", default="runs", help="runs root directory")
     c.add_argument("--repeats", type=int, default=3)
     c.add_argument("--max-attempts", type=int, default=2)
     c.add_argument("--cap-usd", required=True, help="refuse to start if the Estimated first-attempt cost exceeds this")
@@ -68,13 +66,13 @@ def _parser():
     m.add_argument("--screenshot", help="optional screenshot file, stored byte for byte")
     m.add_argument("--cite", action="append", default=[], help="a source URL the surface showed (repeatable)")
     m.add_argument("--vendor", help="vendor slug (default: first part of --surface)")
-    m.add_argument("--facts", default=SAMPLE_FACTS)
+    m.add_argument("--facts", required=True)
     m.add_argument("--mention-term", action="append", required=True)
-    m.add_argument("--out", default=os.path.join(ROOT, "runs"))
+    m.add_argument("--out", default="runs")
 
     e = sub.add_parser("export-fixtures", help="copy a live run's raw responses into regression fixtures")
     e.add_argument("run_dir")
-    e.add_argument("--dest", default=os.path.join(ROOT, "tests", "fixtures", "live"))
+    e.add_argument("--dest", default=os.path.join("tests", "fixtures", "live"))
     return p
 
 
@@ -204,7 +202,7 @@ def report(run_dir, out):
     try:
         index = load_valid_run(run_dir)
         if index.manifest["run_kind"] == "manual":
-            return _refuse("%s is a manual run; it has no decision. Use: geo ledger %s" % (run_dir, run_dir))
+            return _refuse("%s is a manual run; it has no decision. Use: aceseo ledger %s" % (run_dir, run_dir))
         rep = report_mod.build_report(index, report_mod.latest_decision_id(index))
         if out:
             render.render(rep, index, out)

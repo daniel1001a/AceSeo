@@ -293,3 +293,16 @@ Real-data scope: one vendor, one model, one repeat, 10 prompts, one site. Nothin
 Open: add OpenAI credit; decide whether inline Markdown links count as citations; first `--repeats 3` run (cap $2 or more) to calibrate thresholds; fixtures keep `encrypted_content`, `signature` and `tool_use_id` (opaque provider values) and need a read before publishing.
 
 Tests: 304 run, OK, 1 skipped (the live replay now runs).
+
+## Step 14: v0.2 spec and P1 packaging (done 2026-10-30)
+
+Files: `SPEC.md`, `pyproject.toml`, `geo/cli.py`, `geo/manual.py`, `.github/workflows/test.yml`, `.gitignore`, `README.md`, `READY_FOR_LIVE.md`, `skills/aceseo/SKILL.md`, `tests/test_adapters.py`, `tests/test_example.py`, `tests/test_live_path.py`.
+
+- `SPEC.md` records decisions D1 to D4 (hybrid claim ledger, solo-developer user, pip plus skill, real data before tuning) and workstreams P0 to P4.
+- `step0` and `step0/data/*.json` are now packaged; `geo/cli.py` finds the data next to `step0`, not via the repo root. Console command `aceseo`.
+- `collect --prompts/--facts` and `import-manual --facts` are required: no BoardFlight default. `--out` and `export-fixtures --dest` are relative to the current directory (same paths as before when run from the repo root).
+- CI: unit tests on Python 3.9 and 3.13, then a wheel installed in a clean venv plans a run from outside the repo.
+
+Verified locally: wheel built with `uv build`, installed into a Python 3.9 venv, `aceseo collect` dry run with `examples/minimal` from a directory outside the repo; missing `--prompts/--facts` gives an argparse error. The CI workflow itself has not run yet.
+
+Tests: 304 run, OK, 1 skipped.

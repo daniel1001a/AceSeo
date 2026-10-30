@@ -32,7 +32,7 @@ Ask for, or read from context:
 
 ## Step 2: Write the two input files
 
-Start from `examples/minimal/prompts.json` and `examples/minimal/facts.json`, copied to a folder of the user's choice. Never run with the default inputs; they describe a different site. Read `references/inputs.md` for the formats, the five fact keys the matcher can decide, and how to write prompts that are fair tests.
+Start from `examples/minimal/prompts.json` and `examples/minimal/facts.json`, copied to a folder of the user's choice. Never pass the BoardFlight files in `step0/data/` or `design/`; they describe a different site. Read `references/inputs.md` for the formats, the five fact keys the matcher can decide, and how to write prompts that are fair tests.
 
 Tell the user plainly if what they care about is not one of the five fact keys: the tool will store the fact but no answer will be checked against it yet.
 

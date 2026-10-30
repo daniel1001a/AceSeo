@@ -94,7 +94,7 @@ class RuntimeFactsCheck(unittest.TestCase):
                 f.write('{"site": {"name": "X", "hosts": ["x.com"]}, "facts": {}}')
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
-                rc = cli.main(["collect", "--facts", bad, "--cap-usd", "1", "--mention-term", "X"], environ={})
+                rc = cli.main(["collect", "--prompts", os.path.join(MINIMAL, "prompts.json"), "--facts", bad, "--cap-usd", "1", "--mention-term", "X"], environ={})
             self.assertEqual(rc, 2)
             self.assertIn("facts must be a list", err.getvalue())
 

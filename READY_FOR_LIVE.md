@@ -29,7 +29,8 @@ xai has no entry in `KEY_ENV`: its `terms_status` and request shape are
 
 ## 2. Estimated cost (dry run)
 
-From `python3 -m geo.cli collect --cap-usd 1 --mention-term BoardFlight
+From `python3 -m geo.cli collect --prompts step0/data/prompts.json --facts
+design/boardflight.facts.sample.json --cap-usd 1 --mention-term BoardFlight
 --repeats N` against the real `step0/data/{engines,prices}.json`, engines
 anthropic + openai:
 
@@ -56,6 +57,7 @@ skips further slots once the running Estimated spend would pass the cap.
 export ANTHROPIC_API_KEY=...
 export OPENAI_API_KEY=...
 python3 -m geo.cli collect \
+  --prompts step0/data/prompts.json --facts design/boardflight.facts.sample.json \
   --cap-usd 1 --repeats 1 \
   --mention-term BoardFlight --mention-term boardflight.com \
   --key-page https://www.boardflight.com/ \

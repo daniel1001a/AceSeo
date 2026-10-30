@@ -9,7 +9,7 @@ it so its claims get evidence ids like any other.
 
 A manual run never holds page checks or a decision, and decide refuses it, so
 manual observations never enter a citation rate, a contradiction rate or a
-rule outcome. They are listed by `geo ledger`, labelled manual.
+rule outcome. They are listed by `aceseo ledger`, labelled manual.
 """
 
 import unicodedata

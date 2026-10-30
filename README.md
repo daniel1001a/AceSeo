@@ -44,7 +44,12 @@ Python 3.9 or newer. Nothing else.
 git clone <this repo> aceseo
 cd aceseo
 python3 -m unittest discover -s tests -q
+pip install .            # optional: adds the `aceseo` command
 ```
+
+`aceseo <command>` and `python3 -m geo.cli <command>` are the same program;
+the examples below use the second form, which works in a clone without
+installing.
 
 ## See a complete example first
 
@@ -59,9 +64,8 @@ python3 -m geo.cli report examples/synthetic/runs/run_20261019T210001Z_6f7d91
 
 ## Your inputs
 
-You need two files. Templates for a site called "Example Co" are in
-`examples/minimal/`. Without `--prompts` and `--facts` the tool uses the
-BoardFlight files it was built with, which are not about your site.
+You need two files, passed as `--prompts` and `--facts` (both required).
+Templates for a site called "Example Co" are in `examples/minimal/`.
 
 ### prompts.json
 

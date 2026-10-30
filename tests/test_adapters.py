@@ -553,10 +553,13 @@ class Cli(unittest.TestCase):
     def run_cli(self, *extra, environ=None):
         import contextlib
         from geo import cli
+        from geo import facts as facts_mod
         with tempfile.TemporaryDirectory() as tmp:
             out, err = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 rc = cli.main(["collect", "--out", os.path.join(tmp, "runs"), "--cap-usd", "5",
+                               "--prompts", os.path.join(cli.DATA, "prompts.json"),
+                               "--facts", facts_mod.SAMPLE_PATH,
                                "--mention-term", "BoardFlight"] + list(extra), environ=environ or {})
             return rc, out.getvalue(), err.getvalue(), os.listdir(tmp)
 
