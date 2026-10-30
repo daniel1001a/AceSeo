@@ -46,7 +46,7 @@ SNAP_TIME = {"http": "fetched_at", "file": "read_at"}
 RESPONSE_HEADERS = ("content-type", "etag", "location", "last-modified")
 FACT_REQ = ("key", "value", "value_type", "source", "derived_at", "derivation", "content_hash",
             "verification", "stability")
-FACT_OPT = ("enum_values", "prior_values")
+FACT_OPT = ("enum_values", "prior_values", "match")
 SOURCE_REQ = ("kind", "locator", "snapshot_id")
 SOURCE_OPT = ("line", "json_path", "jsonld_index", "header", "excerpt", "fragment_hash", "http")
 SOURCE_HTTP = ("status_code", "final_url", "redirects", "fetched_at")
@@ -341,6 +341,9 @@ class _Checker:
             self.site_status(f, snap, where)
         if "prior_values" in f:
             self.priors(f["prior_values"], vt, f.get("value"), derived, where + ".prior_values")
+        if "match" in f and vt is not None:
+            for msg in match_problems(f["match"], vt, f.get("enum_values")):
+                self.add(3, where + ".match", msg)
         return key
 
     def value(self, v, vt, where, allow_empty):
@@ -556,10 +559,58 @@ def facts_by_key(doc):
     return {f["key"]: f for f in doc["facts"]}
 
 
-# Fact keys the rule matcher (geo/claims.py TOPICS) compares answers against.
-# Any other key is kept in the run's facts snapshot but no claim refers to it.
-MATCHED_KEYS = ("jsonld.organization.same_as", "llms.coverage.airport_count", "llms.data.uses_live_queue_data",
-                "llms.offer.is_free", "site_status")
+# "match" blocks (geo/claims.py topics_for): which phrases in an answer assert
+# a value for a fact. Phrases are literal text, never regexes.
+MATCH_FIELDS = {
+    "boolean": (("positive", "negative"), ("subject_terms",)),
+    "integer": (("unit_terms",), ("subject_terms",)),
+    "enum": (("values",), ("subject_terms",)),
+}
+MAX_PHRASE = 80
+
+
+def _phrase_problems(v, where):
+    if not isinstance(v, list) or not all(isinstance(p, str) for p in v):
+        return ["%s must be a list of strings" % where]
+    out = []
+    for p in v:
+        if not re.search(r"[A-Za-z0-9]", p) or len(p) > MAX_PHRASE:
+            out.append("%s: phrase %r needs a letter or digit and at most %d characters" % (where, p, MAX_PHRASE))
+    if len({p.strip().lower() for p in v}) != len(v):
+        out.append("%s lists a phrase twice" % where)
+    return out
+
+
+def match_problems(match, value_type, enum_values=None):
+    """Messages for a fact's match block; [] when it is usable."""
+    if value_type not in MATCH_FIELDS:
+        return ["match is only for boolean, integer or enum facts, not %s" % value_type]
+    if not isinstance(match, dict):
+        return ["match must be an object"]
+    req, opt = MATCH_FIELDS[value_type]
+    out = ["unknown match field %r" % k for k in sorted(set(match) - set(req) - set(opt))]
+    out += ["match needs %r" % k for k in req if k not in match]
+    for k in ("unit_terms", "positive", "negative", "subject_terms"):
+        if k in match:
+            out += _phrase_problems(match[k], k)
+    if value_type == "boolean" and not out:
+        if not (match["positive"] or match["negative"]):
+            out.append("positive and negative are both empty")
+        both = {p.strip().lower() for p in match["positive"]} & {p.strip().lower() for p in match["negative"]}
+        if both:
+            out.append("phrases in both positive and negative: %s" % ", ".join(sorted(both)))
+    if value_type == "integer" and not out and not match["unit_terms"]:
+        out.append("unit_terms is empty")
+    if value_type == "enum" and "values" in match:
+        vals = match["values"]
+        if not isinstance(vals, dict) or not vals:
+            out.append("values must map enum values to phrase lists")
+        else:
+            for v in sorted(vals):
+                if isinstance(enum_values, list) and v not in enum_values:
+                    out.append("values: %r is not in enum_values" % v)
+                out += _phrase_problems(vals[v], "values[%s]" % v)
+    return out
 
 
 def runtime_problems(doc):
@@ -584,8 +635,11 @@ def runtime_problems(doc):
     for i, f in enumerate(facts):
         if not isinstance(f, dict) or not isinstance(f.get("key"), str) or "value" not in f:
             out.append("facts[%d] needs a string key and a value" % i)
-        else:
-            keys.append(f["key"])
+            continue
+        keys.append(f["key"])
+        if "match" in f:
+            out += ["facts[%s].match: %s" % (f["key"], m)
+                    for m in match_problems(f["match"], f.get("value_type"), f.get("enum_values"))]
     dup = sorted({k for k in keys if keys.count(k) > 1})
     if dup:
         out.append("duplicate fact keys: %s" % ", ".join(dup))
@@ -620,6 +674,17 @@ SAME_AS_VALID_UNTIL = "2026-09-08T17:05:08Z"
 LOADER_NOTICE = ("Built by geo.facts.build_boardflight: the 8 hand-assembled facts of "
                  "design/boardflight.facts.sample.json, sorted, plus 3 facts extracted by code from RECORDED "
                  "bodies. Inherits the sample's hand-assembled facts, so it is still a sample.")
+
+# The phrases matcher v2 hard-coded for this fact, now declared as data.
+LIVE_QUEUE_MATCH = {
+    "positive": ["real-time TSA wait times", "real-time security wait times", "real-time wait times",
+                 "real-time queue times", "live wait times", "live queue data", "uses real-time data",
+                 "uses live data"],
+    "negative": ["does not use live queue data", "doesn't use live queue data", "uses no live queue data",
+                 "no live queue data", "does not use real-time data", "does not use live data",
+                 "does not show real-time", "does not provide real-time", "doesn't show real-time",
+                 "not real-time"],
+}
 
 _JSONLD_RE = re.compile(r'<script type="application/ld\+json"[^>]*>(.*?)</script>', re.S)
 
@@ -708,10 +773,11 @@ def build_boardflight(sample_path=SAMPLE_PATH, recorded_dir=RECORDED_DIR, repo_f
                    llms_snap, generated_at,
                    ["GET source.locator", "Take line 3; match regex '\\bFree, no account\\.'",
                     "A match maps to true; compare to value"]),
-        _llms_fact("llms.data.uses_live_queue_data", False, "boolean", 5, live.group(0),
-                   "llms_txt.regex.uses_live_queue_data.v1", llms_snap, generated_at,
-                   ["GET source.locator", "Take line 5; match regex '\\bIt uses no live queue data\\.'",
-                    "A match maps to false; compare to value"]),
+        dict(_llms_fact("llms.data.uses_live_queue_data", False, "boolean", 5, live.group(0),
+                        "llms_txt.regex.uses_live_queue_data.v1", llms_snap, generated_at,
+                        ["GET source.locator", "Take line 5; match regex '\\bIt uses no live queue data\\.'",
+                         "A match maps to false; compare to value"]),
+             match=LIVE_QUEUE_MATCH),
     ]
 
     blocks = jsonld_blocks(bodies["snap-airport-jfk"].decode("utf-8"))

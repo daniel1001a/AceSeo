@@ -19,11 +19,13 @@ def _status(record):
 
 
 class RunIndex:
-    """records: iterable of record dicts. aux: {fct_/src_ id: {"timestamp": ts}}."""
+    """records: iterable of record dicts. aux: {fct_/src_ id: {"timestamp": ts}}.
+    proposals: llm claims from proposals.jsonl; listed, never counted."""
 
-    def __init__(self, manifest, records, aux=None):
+    def __init__(self, manifest, records, aux=None, proposals=()):
         self.manifest = manifest
         self.records = list(records)
+        self.proposals = list(proposals)
         self._by_id = {}
         for r in self.records:
             rid = r["id"]

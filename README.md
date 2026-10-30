@@ -106,20 +106,41 @@ hostnames, and a list of facts with unique keys:
 }
 ```
 
-The rule matcher (version 1) compares answers against these fact keys only:
+### Declaring facts
+
+The rule matcher (version 3) decides three topics for any site without
+configuration:
 
 | Fact key | Value | Matches sentences like |
 |---|---|---|
 | `site_status` | `"live"`, `"redirect_only"`, `"error"` or `"unreachable"` | "X is no longer operating", "X is live" |
 | `llms.offer.is_free` | `true` or `false` | "X is free to use", "X requires a paid subscription" |
 | `jsonld.organization.same_as` | list of profile URLs (`[]` for none) | "X has no social media profiles", "X has a GitHub" |
-| `llms.coverage.airport_count` | integer | "X covers 33 US airports" (BoardFlight specific) |
-| `llms.data.uses_live_queue_data` | `true` or `false` | "X uses real-time TSA wait times" (BoardFlight specific) |
+
+Any other boolean, integer or enum fact is decided once you give it a `match`
+block. Phrases are literal text (not regexes), matched case-insensitively on
+word boundaries:
+
+```json
+{"key": "offer.has_api", "value": true, "value_type": "boolean",
+ "match": {"positive": ["has an API"], "negative": ["has no API"]}}
+{"key": "coverage.airport_count", "value": 33, "value_type": "integer",
+ "match": {"subject_terms": ["covers"], "unit_terms": ["airports"]}}
+{"key": "plan.tier", "value": "pro", "value_type": "enum", "enum_values": ["free", "pro"],
+ "match": {"values": {"free": ["free plan"], "pro": ["Pro plan"]}}}
+```
+
+`subject_terms` is optional: when set, a sentence must contain one of them
+before the fact is read. A `match` block on a built-in key replaces the
+built-in. The BoardFlight topics (airport count, live queue data) are declared
+this way in `design/boardflight.facts.sample.json`; no site-specific pattern
+is left in the code.
 
 A sentence is decided only when it names the site (by `site.name` or a host in
 `site.hosts`) and hits exactly one topic. Anything else becomes `needs_review`
-or `unsupported` and is listed in the report, not counted. Other fact keys are
-kept in the run's copy of the facts file but no claim refers to them yet.
+or `unsupported` and is listed in the report, not counted. Facts with no
+built-in topic and no `match` block are kept in the run's copy of the facts
+file but no claim refers to them.
 
 Add `"prior_values": [{"value": ..., "valid_until": "...", "source": {...}}]`
 to a fact if an old value is still quoted; an answer repeating it is then
@@ -234,7 +255,41 @@ python3 -m geo.cli import-manual ANSWER.txt --surface google-aio \
   --mention-term "Example Co" --facts examples/minimal/facts.json \
   [--screenshot shot.png] [--cite https://www.example.com/]
 python3 -m geo.cli export-fixtures RUN_DIR   # live run -> redacted test fixtures
+python3 -m geo.cli init https://www.example.com --dir mysite   # draft facts.json + prompts.json
+python3 -m geo.cli diff RUN_A RUN_B          # what changed between two runs
+python3 -m geo.cli propose-claims RUN_DIR --from proposals.json
+python3 -m geo.cli confirm RUN_DIR CLAIM_ID --facts F.json --phrase "has an API" --value true
 ```
+
+`init` makes two public GET requests (the home page and `/llms.txt`) and
+drafts the site name, hosts, `site_status` and JSON-LD `sameAs`. It never
+guesses facts a person must state; it prints the llms.txt summary so you can
+write them. Existing files are never overwritten.
+
+`diff` compares the stored decision numbers (rates as k/n), rule-claim
+verdicts per fact and page-check results. It refuses when the runs used
+different facts or prompts files unless `--allow-input-change` is given.
+
+### Finding new facts with your Claude subscription (no API credit)
+
+Sentences the rules cannot decide show up as `needs_review`. You can have
+Claude Code (or any assistant on your own subscription) read the run's
+`captures.jsonl` and write a proposals file:
+
+```json
+{"model": "claude (subscription, Claude Code)",
+ "proposals": [{"capture_id": "cap_...", "quote": "exact sentence from the answer",
+                "fact_key": "offer.has_api", "asserted_value": true}]}
+```
+
+`propose-claims` checks every quote is in the answer and stores the proposals
+in `RUN_DIR/proposals.jsonl` with `matcher: "llm"` and verdict
+`needs_review`. The decision never reads that file, so a proposal cannot change
+a number or an outcome; the report lists them under "LLM-proposed claims (not
+counted)". When you agree with one, `confirm` adds a phrase from its sentence
+to the fact's `match` block in your facts file, and only if the rules would
+then decide that sentence. The next run counts it. The `model` field is checked
+but not stored.
 
 `import-manual` stores an answer you copied by hand from a surface with no API
 as its own run. Its claims get evidence ids like any other, but a manual run

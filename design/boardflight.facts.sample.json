@@ -158,7 +158,11 @@
           "Compare group 1 to value"
         ]
       },
-      "stability": "changes_per_deploy"
+      "stability": "changes_per_deploy",
+      "match": {
+        "subject_terms": ["cover", "covers", "covered", "covering"],
+        "unit_terms": ["airports"]
+      }
     },
     {
       "key": "llms.data_study.jfk.worst_wait_minutes",

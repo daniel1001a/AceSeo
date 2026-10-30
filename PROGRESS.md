@@ -306,3 +306,17 @@ Files: `SPEC.md`, `pyproject.toml`, `geo/cli.py`, `geo/manual.py`, `.github/work
 Verified locally: wheel built with `uv build`, installed into a Python 3.9 venv, `aceseo collect` dry run with `examples/minimal` from a directory outside the repo; missing `--prompts/--facts` gives an argparse error. The CI workflow itself has not run yet.
 
 Tests: 304 run, OK, 1 skipped.
+
+## Step 15: P2 to P4 without API credit (done 2026-10-30)
+
+Files: `geo/{claims,facts,proposals,init,diff,store,validate,runindex,render,cli}.py`, `design/boardflight.facts.sample.json`, `examples/synthetic/`, `tests/test_{declared_match,proposals,init_diff,claims,example}.py`, `README.md`, `SPEC.md`, `skills/aceseo/`.
+
+- Matcher v3 (`claims.MATCHER_VERSION = 3`): built-in topics are `site_status`, `llms.offer.is_free`, `jsonld.organization.same_as`. Any boolean, integer or enum fact can declare a `match` block of literal phrases; `facts.runtime_problems` checks it. The BoardFlight airport-count and live-queue topics moved into the sample facts file; no site-specific pattern is left in the code.
+- P2 on the subscription: `propose-claims` imports proposals written by an assistant outside the tool into `RUN_DIR/proposals.jsonl` (`matcher: "llm"`, `needs_review`). The validator checks that file; decide never reads it. `confirm` adds a phrase to the fact's `match` block in the user's facts file, only when the rules would then decide the sentence. The report and `ledger` list proposals as not counted.
+- P3 `init URL`: two GETs (home, `/llms.txt`), drafts name, hosts, `site_status`, JSON-LD `sameAs` and 6 generic prompts; never overwrites a file.
+- P4 `diff RUN_A RUN_B`: decision numbers as stored (k/n), rule-claim verdict counts per fact, page-check results; refuses on different facts or prompts files unless `--allow-input-change`. Output is byte-stable (tested).
+- SPEC section 6 records where the build differs from the plan and why.
+
+No API call was made. `collect --live` and P0 still need API credit.
+
+Tests: 339 run, OK, 1 skipped.

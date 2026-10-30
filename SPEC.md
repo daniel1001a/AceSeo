@@ -1,6 +1,6 @@
 # SPEC.md: AceSeo v0.2
 
-Status: agreed 2026-10-30. Supersedes nothing in PLAN.md; it sets the next
+Status: agreed 2026-10-30. P1 to P4 implemented 2026-10-30 (section 6); P0 waits for OpenAI credit. Supersedes nothing in PLAN.md; it sets the next
 work after the MVP (PROGRESS.md Steps 1 to 13).
 
 ## 1. Decisions
@@ -107,3 +107,28 @@ service, multi-site or agency features, LLM-decided verdicts.
 
 P1 now. P0 when credit is available. Then P2 (largest), P3, P4. MCP server
 after P4 if the skill sees use.
+
+## 6. Status and changes from the plan (2026-10-30)
+
+- P1 done (commit 3fdd57a).
+- P2 done with one change: the owner has a Claude subscription and no API
+  credit, so the LLM path does not call an API. `--llm-claims` was replaced
+  by `aceseo propose-claims RUN --from FILE`: the proposals are written by an
+  assistant on the subscription (for example Claude Code) and imported. They
+  are stored in `RUN_DIR/proposals.jsonl`, which decide never reads, so a
+  proposal cannot change a decision (tested). `aceseo confirm` promotes a
+  proposal by adding a phrase to the fact's `match` block in the user's facts
+  file, refusing unless the rules would then decide the sentence; it takes
+  effect from the next run, and no existing record is edited. The `model`
+  field is validated but not stored (the claim schema allows no extra
+  fields); no raw response hash exists because there is no API response.
+  `MATCHER_VERSION` is 3; BoardFlight topics are declared in
+  `design/boardflight.facts.sample.json`.
+- P3 done, narrower than planned: `init` fetches the home page and
+  `/llms.txt` only (no robots.txt; page checks already cover it) and drafts
+  the minimal facts format, not the W3 schema with snapshot hashes. Facts a
+  person must state are not guessed; the llms.txt summary is printed instead.
+- P4 done as specified. `diff` reads the stored decision numbers, so it
+  shows every statistic the decision recorded, not only mention and citation
+  rates.
+- Still needs API credit: `collect --live` and P0.

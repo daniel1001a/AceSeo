@@ -95,7 +95,7 @@ class W5_03(ClaimRun):
     def test_case6_rule_matcher_contradicted_then_matched(self):
         facts = self.run.facts_doc
         self.assertEqual(C.match_text(C_OK_TEXT, facts),
-                         [C.Spec(0, len(C_OK_TEXT), "airport_count", "llms.coverage.airport_count",
+                         [C.Spec(0, len(C_OK_TEXT), "llms.coverage.airport_count", "llms.coverage.airport_count",
                                  "contradicted", "value_mismatch")])
         [sp] = C.match_text("BoardFlight covers 33 US airports.", facts)
         self.assertEqual((sp.verdict, sp.verdict_basis), ("matched", "exact"))

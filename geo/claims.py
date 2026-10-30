@@ -22,7 +22,9 @@ MATCHER = "rule"
 # v2: topic readers and the entity check see the sentence with Markdown
 # emphasis and code marks removed. Real answers bold the value
 # ("covers **33 US airports**"), which v1 read as no value.
-MATCHER_VERSION = 2
+# v3: no site-specific patterns. Besides the three built-in topics, a fact is
+# matched only through the "match" block declared in the facts file.
+MATCHER_VERSION = 3
 MATCHERS = ("rule", "llm")
 
 VERDICT_BASES = {
@@ -62,24 +64,12 @@ _STATUS_POS = re.compile(
     r"still\s+(?:operating|active|online)|actively\s+maintained)\b"
     r"|仍在營運|還在營運|仍在运营|还在运营|正常營運|正常运营", _I)
 
-_COUNT = re.compile(r"\bcover(?:s|ed|ing)?\s+([^\n]{0,40}?)\s*\bairports\b", _I)
-_COUNT_VALUE = re.compile(r"([0-9]{1,4})(?:\s+(?:US|U\.S\.|United\s+States))?", _I)
-
 _FREE_POS = re.compile(
     r"\b(?:is\s+(?:completely\s+|totally\s+|entirely\s+)?free|free\s+to\s+use|free\s+of\s+charge|"
     r"no\s+account\s+(?:is\s+)?(?:needed|required)|costs?\s+nothing)\b", _I)
 _FREE_NEG = re.compile(
     r"\b(?:is\s+not\s+free|isn't\s+free|paid\s+(?:app|service|subscription|plan|tier)|"
     r"requires?\s+(?:a\s+)?(?:paid\s+)?(?:subscription|account)|subscription\s+fee)\b|\bcosts?\s+\$[0-9]", _I)
-
-_LIVE_NEG = re.compile(
-    r"\b(?:uses?\s+no\s+(?:real[- ]time|live)|(?:does\s+not|doesn't|do\s+not)\s+(?:use|provide|show)\s+"
-    r"(?:any\s+)?(?:real[- ]time|live)|no\s+(?:real[- ]time|live)\s+(?:queue|wait|security|tsa)|"
-    r"not\s+(?:real[- ]time|live)\s+(?:queue|wait|data))", _I)
-_LIVE_POS = re.compile(
-    r"\b(?:(?:uses?|provides?|shows?|offers?|displays?)\s+(?:real[- ]time|live)\s+(?:(?:security|tsa|queue|wait|"
-    r"checkpoint)\s+)*(?:data|wait\s+times|times|updates|feeds?)|real[- ]time\s+(?:(?:tsa|security|checkpoint)\s+)?"
-    r"(?:wait|queue)\s+times|live\s+queue\s+data)\b", _I)
 
 _SAMEAS_NONE = re.compile(
     r"\b(?:no|without|lacks?|(?:does\s+not|doesn't)\s+have)\s+(?:any\s+)?(?:official\s+|verified\s+|public\s+)?"
@@ -99,14 +89,6 @@ def _site_status(s):
     if neg and pos:
         return UNDECIDED
     return NOT_LIVE if neg else "live"
-
-
-def _airport_count(s):
-    m = _COUNT.search(s)
-    if not m:
-        return None
-    v = _COUNT_VALUE.fullmatch(m.group(1).strip())
-    return int(v.group(1)) if v else UNDECIDED  # hedges ("about 40") and words stay undecided
 
 
 def _pair(pos_re, neg_re, pos_value, neg_value, negation_wins):
@@ -129,17 +111,120 @@ def _same_as(s):
     return [] if none else HAS_PROFILES
 
 
-# (topic, fact_key, reader). A reader returns None (no hit), UNDECIDED or the
-# asserted value. The negated live-data phrases contain the positive ones
-# ("does not use live queue data"), so for that topic the negation wins.
-TOPICS = (
+# Built-in topics: (topic, fact_key, reader). A reader returns None (no hit),
+# UNDECIDED or the asserted value. These three are generic; any other fact is
+# matched only through the "match" block its facts file declares.
+BUILTIN_TOPICS = (
     ("site_status", "site_status", _site_status),
-    ("airport_count", "llms.coverage.airport_count", _airport_count),
     ("is_free", "llms.offer.is_free", _pair(_FREE_POS, _FREE_NEG, True, False, negation_wins=False)),
-    ("uses_live_queue_data", "llms.data.uses_live_queue_data",
-     _pair(_LIVE_POS, _LIVE_NEG, True, False, negation_wins=True)),
     ("same_as", "jsonld.organization.same_as", _same_as),
 )
+BUILTIN_KEYS = tuple(sorted(k for _, k, _ in BUILTIN_TOPICS))
+
+
+# --- declared topics (facts file "match" blocks) --------------------------------
+
+# A hedge right before a number makes the count undecided ("about 33").
+_HEDGE = re.compile(
+    r"(?:\b(?:about|around|approximately|approx\.?|over|more\s+than|nearly|almost|roughly|at\s+least|"
+    r"up\s+to|under|fewer\s+than|less\s+than|some)|~)\s*$", _I)
+
+_RANGE = re.compile(r"[0-9]\s*(?:or|to|-|\u2013)\s*$", _I)  # "3 or 4 plans", "3-4 plans"
+
+
+def phrase_re(phrases):
+    """Literal phrases, case-insensitive, whole words; any run of spaces or
+    hyphens in a phrase matches any run of spaces or hyphens in the text."""
+    parts = []
+    for p in sorted(phrases, key=len, reverse=True):
+        words = [w for w in re.split(r"[\s-]+", p.strip()) if w]
+        parts.append(r"[\s-]+".join(re.escape(w) for w in words))
+    return re.compile(r"(?<![A-Za-z0-9])(?:%s)(?![A-Za-z0-9])" % "|".join(parts), _I)
+
+
+def _subject(match):
+    terms = match.get("subject_terms")
+    return phrase_re(terms) if terms else None
+
+
+def _boolean_reader(match):
+    subj = _subject(match)
+    pos = phrase_re(match["positive"]) if match.get("positive") else None
+    neg = phrase_re(match["negative"]) if match.get("negative") else None
+
+    def read(s):
+        if subj and not subj.search(s):
+            return None
+        negs = [m.span() for m in neg.finditer(s)] if neg else []
+        # A positive phrase inside a negative one ("use live data" in "does not
+        # use live data") is part of the negation, not a second hit.
+        poss = [m.span() for m in pos.finditer(s)
+                if not any(a < m.end() and m.start() < b for a, b in negs)] if pos else []
+        if not (negs or poss):
+            return None
+        if negs and poss:
+            return UNDECIDED
+        return False if negs else True
+    return read
+
+
+def _integer_reader(match):
+    subj = _subject(match)
+    unit = phrase_re(match["unit_terms"])
+    # A number, then up to two words ("33 US airports"), then a unit term.
+    count = re.compile(r"(?<![A-Za-z0-9.,])([0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(\+?)\s+(?:(?![0-9])\S+\s+){0,2}?(?:%s)"
+                       % unit.pattern[len("(?<![A-Za-z0-9])"):], _I)
+
+    def read(s):
+        if subj and not subj.search(s):
+            return None
+        if not unit.search(s):
+            return None
+        values = set()
+        for m in count.finditer(s):
+            if m.group(2) or _HEDGE.search(s[:m.start()]) or _RANGE.search(s[:m.start()]):
+                return UNDECIDED
+            values.add(int(m.group(1).replace(",", "")))
+        if len(values) == 1:
+            return values.pop()
+        # No plain number ("dozens of", other digits): undecided only when a
+        # subject term says the sentence is about this fact.
+        return UNDECIDED if values or subj else None
+    return read
+
+
+def _enum_reader(match):
+    subj = _subject(match)
+    readers = [(v, phrase_re(ps)) for v, ps in sorted(match["values"].items()) if ps]
+
+    def read(s):
+        if subj and not subj.search(s):
+            return None
+        hits = [v for v, r in readers if r.search(s)]
+        if not hits:
+            return None
+        return hits[0] if len(hits) == 1 else UNDECIDED
+    return read
+
+
+DECLARED_READERS = {"boolean": _boolean_reader, "integer": _integer_reader, "enum": _enum_reader}
+
+
+def topics_for(facts_doc):
+    """Built-in topics, then one topic per fact with a match block, keyed by the
+    fact key. A declared match block on a built-in key replaces the built-in."""
+    declared = {}
+    for f in facts_doc.get("facts") or ():
+        if isinstance(f, dict) and isinstance(f.get("match"), dict) and f.get("value_type") in DECLARED_READERS:
+            declared[f["key"]] = DECLARED_READERS[f["value_type"]](f["match"])
+    out = [t for t in BUILTIN_TOPICS if t[1] not in declared]
+    out += [(k, k, declared[k]) for k in sorted(declared)]
+    return tuple(out)
+
+
+def matched_keys(facts_doc):
+    """Fact keys the rule matcher can decide for this facts file."""
+    return tuple(sorted(k for _, k, _ in topics_for(facts_doc)))
 
 
 # --- entity -------------------------------------------------------------------
@@ -198,7 +283,7 @@ def _decide(topic, fact, asserted):
     if topic == "same_as" and asserted == HAS_PROFILES:
         return ("matched", "normalized") if current else ("contradicted", "value_mismatch")
     if _same(asserted, current):
-        return ("matched", "exact") if topic == "airport_count" else ("matched", "normalized")
+        return ("matched", "exact") if fact.get("value_type") == "integer" else ("matched", "normalized")
     if any(_same(asserted, p) for p in priors):
         return ("outdated", "prior_value")
     return ("contradicted", "value_mismatch")
@@ -208,10 +293,11 @@ def match_text(text, facts_doc):
     """Return one Spec per claim-bearing sentence of text, in text order."""
     site = facts_doc.get("site") or {}
     facts = facts_by_key(facts_doc)
+    topics = topics_for(facts_doc)
     out = []
     for s, e in sentences(text):
         sent = _MARKUP.sub("", text[s:e])
-        hits = [(topic, key, value) for topic, key, read in TOPICS
+        hits = [(topic, key, value) for topic, key, read in topics
                 for value in [read(sent)] if value is not None]
         no_fact = _NO_FACT.search(sent) is not None
         if not hits and not no_fact:

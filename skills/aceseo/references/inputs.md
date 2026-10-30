@@ -44,19 +44,27 @@ What the tool reads at run time:
 
 The collect command refuses a facts file missing any required field (`refused: <path>: ...`, exit 2). It does not apply the full schema in `design/w3-facts-schema.md`; that schema is for generated files with source snapshots.
 
-### Fact keys the matcher decides (version 1)
+### Fact keys the matcher decides (version 3)
+
+Built in, for any site:
 
 | Key | Value type | Example sentence it reads |
 |---|---|---|
 | `site_status` | `"live"`, `"redirect_only"`, `"error"`, `"unreachable"` | "Example Co is no longer operating." "example.com is live." |
 | `llms.offer.is_free` | boolean | "Example Co is free to use." "It requires a paid subscription." |
 | `jsonld.organization.same_as` | list of URLs, `[]` for none | "Example Co has no social media profiles." "Example Co has a GitHub." |
-| `llms.coverage.airport_count` | integer | "covers 33 US airports" (written for BoardFlight) |
-| `llms.data.uses_live_queue_data` | boolean | "uses real-time TSA wait times" (written for BoardFlight) |
+
+Any other boolean, integer or enum fact is decided when it has a `match` block
+of literal phrases (see README "Declaring facts"):
+
+- boolean: `{"positive": [...], "negative": [...]}`
+- integer: `{"unit_terms": [...]}` ("covers 33 US airports" with unit `airports`)
+- enum: `{"values": {"value": [phrases], ...}}`
+- any of them: optional `"subject_terms": [...]`, words a sentence must contain
 
 Anything else an answer says about the site is either `unsupported` (a known topic such as founding year or app store with no fact) or `needs_review` (hedged, two topics in one sentence, value not readable, or the site not named). Both are listed, never counted against the site.
 
-If the user's important facts are not in this table, say so before they spend money: the run will still give citation and mention rates, but no contradiction verdicts for those facts. Adding a topic means adding patterns to `geo/claims.py` and tests; that is a code change, not a configuration change.
+If the user's important facts have no built-in topic, write a `match` block for them before they spend money; without one the run still gives citation and mention rates, but no verdicts for those facts. This is a facts-file change, not a code change.
 
 ### Before the run
 

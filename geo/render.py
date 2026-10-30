@@ -269,6 +269,19 @@ def _not_checked_section(index, ctx):
     return lines
 
 
+def _proposals_section(index):
+    """LLM proposals (proposals.jsonl): listed for review, never counted."""
+    if not index.proposals:
+        return []
+    lines = ["", "## LLM-proposed claims (not counted)", "",
+             "Proposed by an LLM outside the run and checked only for their quote. No rule read them;",
+             "confirm one with `aceseo confirm` to turn it into a rule for the next run.", ""]
+    for r in sorted(index.proposals, key=lambda r: r["id"]):
+        lines.append("- %s %s, in capture %s: %s" % (
+            r["id"], "fact %s" % r["fact_key"] if r["fact_key"] else "no fact", r["capture_id"], r["statement"]))
+    return lines
+
+
 def _check_decisions(report, ctx):
     for did in report.decision_ids:
         ev = _resolve(did, ctx)
@@ -311,6 +324,7 @@ def render_text(report, index):
     out.extend(_excluded_section(index))
     out.append("")
     out.extend(_not_checked_section(index, ctx))
+    out.extend(_proposals_section(index))
     out.extend(["", "---", FOOTER, ""])
     if ctx.errors:
         raise RenderError(ctx.errors)
