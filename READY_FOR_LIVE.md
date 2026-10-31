@@ -131,7 +131,61 @@ caveats, and the report and manifest say so:
   `geo/pagechecks.py`), the minimum paragraph length used by the
   main-content check.
 
-## 6. Recommended first live run
+## 6. Current scope and deferred API validation
+
+2026-10-31 P0 attempt: the owner confirmed credit and approved the dry-run
+plan (60 calls, $1.491 expected / $1.791 upper estimate, `--cap-usd 2`,
+current `design/boardflight.facts.json`). The live command refused before
+writing a run or sending requests because both `ANTHROPIC_API_KEY` and
+`OPENAI_API_KEY` were absent from the process environment. Run id: none;
+actual spend: $0. No new fixtures or OpenAI field verification are possible
+yet (`FIELD_STATUS` lives in `geo/adapters.py`). All thresholds stay unchanged
+and provisional: there are no new per-engine n or rates to justify calibration.
+Owner's subsequent instruction (2026-10-31): no API top-up; use subscription
+services only. P0 API collection is deferred, not awaiting key setup under the
+current scope. Subscription answers can be recorded with `import-manual` as
+consumer-surface evidence; they cannot verify API fields, produce API response
+fixtures, or calibrate API thresholds. No further paid API calls are authorized
+under this revised scope.
+
+Subscription observation completed 2026-10-31 after login confirmation: ten
+fresh ChatGPT web conversations, Web search selected for each, initial menu
+GPT-6 / Instant (backend identifier unknown). Ten manual runs and evidence are
+under gitignored `runs/subscription-20261031/`; `index.json` maps every run id,
+PROGRESS.md Step 19 lists them, and `summary.md` explains the ledger. Workspace
+2 was finished. This replaces the earlier pending-login state.
+
+Follow-up matcher v5 uses same-name other hosts in the answer and citations to
+keep brand-only statements needs_review. Explicit allowed hosts still work;
+pronouns are not resolved. Proposal confirmation retains this context too.
+Reimporting the same saved observations under `rechecked-v5/` gives 4 claims:
+1 matched (61 airports), 3 needs_review. The .app free=true false positive is
+now needs_review. Original runs and observation times are preserved, with no
+new samples. `index-v5.json` and `summary-v5.md` record the recheck. Facts were
+not changed. This conservative guard can downgrade brand-only comparisons.
+
+
+Citation backfill is now complete for all 17 recorded prose citation groups
+(29 source-card occurrences). The owner authorized replacement workspace 5;
+it reopened the same saved conversations, verified unchanged answer content,
+and recorded actual opened URLs and separate later observation times. No new
+prompt or regeneration was sent. Workspace 5 was finished.
+Final manual imports are in `complete-v5/`; `index-final.json` and
+`summary-final.md` are the current index and review. Original imports remain
+intact. All ten final imports validate, with unchanged v5 claim ids/verdicts:
+1 matched, 3 needs_review. These observations provide no API rates or decisions
+and do not complete API P0. Added API spend remains $0.
+
+Task B is verified complete: full suite 341 tests, OK, 1 skipped, including the
+byte-for-byte synthetic rebuild. The saved answer still has 2 matched and 7
+needs_review claims; its live-queue sentence lacks an explicit site mention.
+The entity rule was strengthened in v5; it was not relaxed. Latest full suite:
+346 tests, OK, 1 skipped. No FIELD_STATUS or threshold changes were made.
+The earlier missing-citation limitation and workspace blocker are resolved.
+Source claims, personalization and location remain unverified.
+
+The historical API plan below is deferred. Use it only if the owner explicitly
+reopens paid API work with new authorization and a reviewed dry-run plan.
 
 - Engines: anthropic and openai only. Add `--opt-in perplexity` (with
   `PERPLEXITY_API_KEY`) only for a second run, once the first has been read.

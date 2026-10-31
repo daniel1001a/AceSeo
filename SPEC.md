@@ -141,8 +141,13 @@ skill.
 
 ## 7. Remaining work
 
-Open: P5 and P6 (no credit needed, do these first), then P0 (gated on the
-owner adding OpenAI credit; the account has none, `PROGRESS.md` Step 13).
+Current scope (owner instruction, 2026-10-31): subscription services only,
+no API top-up and no paid API calls. This supersedes the API execution plan
+below and the older section 3 P0 entry. API P0 is deferred, not complete;
+do not request keys or credit unless the owner explicitly reopens it.
+P5's facts and saved-answer import are implemented with the limitation below;
+P6 is deployed (PROGRESS.md Steps 16 and 17). Task B is verified complete.
+Subscription observation and citation backfill are completed for ten prompts.
 MCP server stays deferred.
 
 ### P5. Current BoardFlight facts and the first ChatGPT import (no credit)
@@ -211,24 +216,89 @@ then report as inconsistent.
 - After it is deployed, add a `llms.data.flight_lookup_is_live` = true fact
   to `design/boardflight.facts.json` if the owner wants it checked.
 
-### P0. Real-data validation (needs OpenAI credit)
+### Task B. Site-status collision (verified complete 2026-10-31)
 
-Check first that the owner has added OpenAI credit; if not, stop. Then:
+Matcher v4 excludes "not live" followed by a word from site-status negatives,
+except predicate endings "yet", "anymore" and "now". Generic regression tests
+cover "not live measurements/data" and "the site is not live". This is a
+conservative lexical rule: predicates with other following words may be missed.
+No site-specific matcher terms or entity-rule changes were made.
+The saved answer still yields 9 claims: 2 matched, 7 needs_review. In particular,
+"its security wait times..." lacks an explicit site mention, so removing the
+collision does not decide that sentence. P5's original three-match acceptance
+criterion remains unmet for that answer. Full suite: 341 tests, OK, 1 skipped;
+the deterministic synthetic example matches its rebuild byte for byte.
 
-1. Export fixtures from a BoardFlight run (`--prompts step0/data/prompts.json
-   --facts design/boardflight.facts.json` (from P5) `--repeats 3`, engines
-   anthropic + openai, `--cap-usd 2`), live.
-2. Move every OpenAI field the run actually returns from `unverified` to
-   `live` in `geo/facts.py: FIELD_STATUS` (follow the pattern used for
-   Anthropic in PROGRESS.md Step 13).
-3. Compare the real per-engine n and rates against the thresholds in
-   `geo/number.py`; change a threshold only when the run's own numbers show
-   it is wrong, citing the run id as the source. Do not change a threshold
-   on the OpenAI run's say alone if repeats or sample size do not support it.
-4. Record the outcome (changed or kept, with reason) in `READY_FOR_LIVE.md`
-   section 6, and add a PROGRESS.md step.
-5. Re-run the full suite and `export-fixtures`; commit the new fixtures and
-   docs.
+### Subscription observation (separate from API P0)
+
+Use the owner's ChatGPT subscription browser UI and the ten prompts in
+`step0/data/prompts.json`, with fresh conversations where practical. Preserve
+exact prompts, answers, actually shown citations and observation times under
+gitignored `runs/`. Record visible model/search settings or explicitly unknown.
+Import with `import-manual` and `design/boardflight.facts.json`; inspect the
+ledger. Manual observations never enter API rates or decisions. Do not export
+API fixtures, promote `FIELD_STATUS`, calibrate API thresholds or silently
+confirm proposals from these observations.
+
+Completed 2026-10-31 after the owner confirmed login: ten fresh ChatGPT web
+conversations, one per existing prompt, imported as ten manual runs under
+`runs/subscription-20261031/imports/`. Evidence and run-id mapping:
+`runs/subscription-20261031/index.json`; reviewed summary:
+`runs/subscription-20261031/summary.md`. Visible initial model selection was
+GPT-6 with Instant effort; the backend identifier is unknown. Web search was
+selected for every prompt. Workspace 2 was finished after capture.
+
+The original v4 ledgers recorded 4 claims, 2 matched and 2 needs_review.
+Follow-up matcher v5 corrects the contextual false positive: same-name other
+hosts in the answer or citations make brand-only sentences needs_review;
+explicit allowed hosts still disambiguate. Pronouns still do not name the site.
+This is conservative and can also downgrade brand-only comparison statements.
+Citation hostnames count; URL paths and titles do not. Proposal confirmation
+uses the same full-capture context and cannot bypass this check.
+
+The same saved observations were reimported under
+`runs/subscription-20261031/rechecked-v5/`, with unchanged run ids and original
+observation times, not new samples. The original v4 runs remain intact.
+`index-v5.json` maps both versions; `summary-v5.md` explains the result:
+4 claims, 1 matched (61 airports), 3 needs_review. The .app free=true answer
+now stays needs_review. No facts or match phrases were changed. Full suite:
+346 tests, OK, 1 skipped, including the deterministic synthetic rebuild.
+
+Citation backfill completed after the owner explicitly allowed a replacement
+workspace. Workspace 5 reopened the same saved conversations without new prompts
+or regeneration; all ten answers matched saved content after normalizing layout
+whitespace. All 17 saved prose citation groups (29 source-card occurrences)
+were resolved through their actual UI targets. Later backfill timestamps are
+stored separately under `citation-backfill/`; original evidence is intact.
+
+Final manual imports are under `runs/subscription-20261031/complete-v5/`.
+`index-final.json` maps all versions and run ids; `summary-final.md` is the
+current review. The same ten run ids and original observation times are reused,
+not new samples. All ten final imports validate; v5 claim ids and verdicts
+remain unchanged at 1 matched, 3 needs_review. Workspaces are finished.
+Personalization and location were not controlled; fresh conversations do not
+prove statistical independence. Source claims were not independently verified.
+See PROGRESS.md Steps 19 to 21 for the observation and recheck history.
+
+### P0. API real-data validation (deferred by owner)
+
+The 2026-10-31 attempt refused before sending requests or creating a run.
+Actual API spend for that attempt and this continuation: $0. No new fixtures,
+OpenAI success replay test or field verification exists. `FIELD_STATUS` is in
+`geo/adapters.py`, not `geo/facts.py`; it is unchanged. Thresholds in
+`geo/number.py` remain unchanged and provisional because no new API per-engine
+n or rates exist. Subscription observation does not complete API P0.
+
+If the owner explicitly reopens API P0, confirm new spending authorization and
+credit, re-read CLI flags, and show a dry-run plan before execution. Historical
+inputs were ten prompts, current facts, three repeats, anthropic + openai,
+`--cap-usd 2`; $1.491 expected / $1.791 upper were estimates, not a guaranteed
+bill ceiling. Export to new empty destinations, verify byte-identical exports,
+promote only actually observed API fields, add a real OpenAI success replay,
+and review thresholds using adequate per-engine evidence and the run id.
+Release authorization (2026-10-31): the owner subsequently authorized commits,
+push of v0.2, a pull request and merge into main after validation. This does
+not authorize paid API work or complete API P0.
 
 MCP server: no action until the Claude Code skill (`skills/aceseo/`) has
 seen real use; revisit D3 then.
