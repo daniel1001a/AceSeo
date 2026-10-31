@@ -1,5 +1,7 @@
 # AceSeo
 
+[![test](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml/badge.svg)](https://github.com/daniel1001a/AceSeo/actions/workflows/test.yml) [![License: MIT](https://img.shields.io/github/license/daniel1001a/AceSeo)](LICENSE) [![Release](https://img.shields.io/github/v/release/daniel1001a/AceSeo)](https://github.com/daniel1001a/AceSeo/releases/latest) ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+
 Check what AI answer engines say about your site, and get a recommendation you
 can trace back to the evidence.
 
@@ -12,10 +14,10 @@ records it was computed from.
 
 What makes it different:
 
-- **Official APIs only.** No scraping of consumer apps, no logged-in surfaces.
+- **Official API collector, separate manual observations.**
   An engine is called only if its API terms were read and recorded as allowing
-  this use (`step0/data/engines.json`). Surfaces with no API, such as Google AI
-  Overviews, can be recorded by hand and are kept out of every rate.
+  this use (`step0/data/engines.json`). Consumer surfaces, including ChatGPT and Google AI
+  Overviews, can be recorded by hand and are kept out of every API rate and decision.
 - **Facts come from code and files, not from a model.** A claim is matched to
   a fact by rules (`geo/claims.py`), and the verdict says which rule decided it.
 - **A traceable claim ledger.** Every raw response is stored by its SHA-256.
@@ -29,27 +31,78 @@ What makes it different:
 It does not change your site, does not produce a visibility score, and does not
 need an account anywhere except the API keys you already have.
 
-Status (2026-10-20): the pipeline has run once against real Anthropic API
-responses (`--repeats 1`, one site), covered by tests replaying those
-responses as fixtures. OpenAI has not been verified against a real response
-yet (the account had no credit; see `PROGRESS.md` Step 13). Perplexity is
-still offline-only. Thresholds remain `provisional`. See `READY_FOR_LIVE.md`
-for what is still `unverified` or `Estimated`.
+Status (2026-10-31): Anthropic has one small real API run with replay fixtures.
+OpenAI API success remains unverified and Perplexity is offline-only. The owner
+has selected subscription-only observation; paid API P0 is deferred. Ten manual
+ChatGPT observations and their shown citations were imported separately, with
+no API rates or decisions. Thresholds remain `provisional`; FIELD_STATUS is
+unchanged. See `docs/PROGRESS.md` Steps 19–22 and `docs/READY_FOR_LIVE.md`.
+
+## Who it's for
+
+- Site owners and marketers who want to know what AI models with web search
+  (OpenAI, Anthropic, and Perplexity if you opt in, through their official
+  APIs) say about their site, and whether those answers contradict the site's
+  own facts.
+- SEO and GEO/AEO practitioners who need every number in a report to carry its
+  sample size and the evidence ids it came from.
+- Developers who want a dependency-free Python CLI they can run locally, or
+  drive from Claude Code with the bundled skill (`skills/aceseo/`).
+
+## Quickstart in 30 seconds (offline, no API key)
+
+```
+git clone https://github.com/daniel1001a/AceSeo.git
+cd AceSeo
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e .
+aceseo report examples/synthetic/runs/run_20261019T210001Z_6f7d91
+```
+
+This re-renders the SYNTHETIC example run shipped in `examples/synthetic/`
+(built offline with fake keys). Nothing is sent anywhere. The start of the
+output:
+
+```
+# GEO evidence report
+
+Run: run_20261019T210001Z_6f7d91 (transport fixture)
+
+## Recommendation
+
+GEO first: fix facts. The same claim that contradicts the site's own facts, or
+repeats a value the facts mark as outdated, appears in enough answers to pass
+the reproduction threshold. Make the correct fact easier to find and quote.
+(draft wording, not yet reviewed against a live run) The deciding rule is the
+reproduced fact contradictions rule. Decision record:
+[dec_site_d9c5630060e9fcf0]. ...
+
+## Contradicted or outdated claims
+
+- [clm_anthropic_4840677f9b118917] is contradicted against fact [fct_3a18902f276b9006], in capture [cap_anthropic_2b1d0e3b4f85174b]
+- [clm_anthropic_bc527104063c89d4] is contradicted against fact [fct_3a18902f276b9006], in capture [cap_anthropic_31ffa694bd40ea94]
+...
+```
+
+The full report is in [`examples/synthetic/report.md`](examples/synthetic/report.md).
 
 ## Install
 
 Python 3.9 or newer. Nothing else.
 
 ```
-git clone <this repo> aceseo
-cd aceseo
+git clone https://github.com/daniel1001a/AceSeo.git
+cd AceSeo
+pip install -e .
 python3 -m unittest discover -s tests -q
-pip install .            # optional: adds the `aceseo` command
+
+# Alternative to the editable install: pip install .
 ```
 
-`aceseo <command>` and `python3 -m geo.cli <command>` are the same program;
-the examples below use the second form, which works in a clone without
-installing.
+`aceseo <command>` and `python3 -m geo.cli <command>` are the same program.
+Both editable and regular installs include the packaged `step0/data/` files;
+run artifacts are written under the current directory's `runs/`. You can also
+use `python3 -m geo.cli` from a clone without installing.
 
 ## See a complete example first
 
@@ -108,7 +161,7 @@ hostnames, and a list of facts with unique keys:
 
 ### Declaring facts
 
-The rule matcher (version 3) decides three topics for any site without
+The rule matcher (version 5) decides three topics for any site without
 configuration:
 
 | Fact key | Value | Matches sentences like |
@@ -138,7 +191,9 @@ is left in the code.
 
 A sentence is decided only when it names the site (by `site.name` or a host in
 `site.hosts`) and hits exactly one topic. Anything else becomes `needs_review`
-or `unsupported` and is listed in the report, not counted. Facts with no
+or `unsupported` and is listed in the report, not counted. Same-name other
+domains in the answer or citation hostnames keep brand-only claims under review;
+pronouns do not inherit site identity. Facts with no
 built-in topic and no `match` block are kept in the run's copy of the facts
 file but no claim refers to them.
 
@@ -291,7 +346,7 @@ to the fact's `match` block in your facts file, and only if the rules would
 then decide that sentence. The next run counts it. The `model` field is checked
 but not stored.
 
-`import-manual` stores an answer you copied by hand from a surface with no API
+`import-manual` stores an answer you copied by hand from a consumer surface
 as its own run. Its claims get evidence ids like any other, but a manual run
 never enters a rate or a decision.
 
@@ -316,7 +371,13 @@ skill runs the commands above; it never asks for your keys in the chat.
   test plan the code follows.
 - `examples/`: input templates and the SYNTHETIC example run.
 - `skills/aceseo/`: a Claude Code skill that drives this tool.
-- `PROGRESS.md`, `READY_FOR_LIVE.md`: build log and live-run checklist.
+- `docs/`: the build plan (`PLAN.md`), build log (`PROGRESS.md`) and live-run
+  checklist (`READY_FOR_LIVE.md`).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) for API key
+handling, and [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

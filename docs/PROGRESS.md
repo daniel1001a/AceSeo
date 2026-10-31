@@ -581,7 +581,12 @@ ChatGPT co-author trailer. Consumer evidence stays under ignored runs/.
 
 Fetched origin before release: main includes repository-polish changes that
 overlap v0.2 in README, packaging metadata and CI, plus moves the build logs
-to docs/. Integrate those changes on v0.2, retain packaged step0 data and the
-wheel-install smoke test, and validate the combined result before pushing.
+to docs/. Integrated those changes on v0.2, retaining packaged step0 data,
+main metadata and the wheel-install smoke test. CI covers Python 3.9, 3.12
+and 3.13. The combined offline suite passed: 346 tests, OK, 1 skipped,
+including the byte-identical synthetic rebuild. Built the wheel, installed it
+in a separate venv and successfully planned a minimal run from outside the
+repository without sending requests. Build succeeded with existing setuptools
+license-metadata deprecation warnings. README and CHANGELOG reflect v0.2.
 The PR records the final CI and merge result. API P0 remains deferred;
 API spend $0, FIELD_STATUS unchanged, thresholds unchanged and provisional.

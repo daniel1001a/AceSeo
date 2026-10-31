@@ -1,7 +1,7 @@
 # SPEC.md: AceSeo v0.2
 
-Status: agreed 2026-10-30. P1 to P4 implemented 2026-10-30 (section 6); P5 and P6 added 2026-10-30 (section 7); P0 waits for OpenAI credit. Supersedes nothing in PLAN.md; it sets the next
-work after the MVP (PROGRESS.md Steps 1 to 13).
+Status: agreed 2026-10-30. P1 to P4 implemented 2026-10-30 (section 6); P5 and P6 added 2026-10-30 (section 7); API P0 is deferred under the owner’s subscription-only instruction. Supersedes nothing in docs/PLAN.md; it sets the next
+work after the MVP (docs/PROGRESS.md Steps 1 to 13).
 
 ## 1. Decisions
 
@@ -146,7 +146,7 @@ no API top-up and no paid API calls. This supersedes the API execution plan
 below and the older section 3 P0 entry. API P0 is deferred, not complete;
 do not request keys or credit unless the owner explicitly reopens it.
 P5's facts and saved-answer import are implemented with the limitation below;
-P6 is deployed (PROGRESS.md Steps 16 and 17). Task B is verified complete.
+P6 is deployed (docs/PROGRESS.md Steps 16 and 17). Task B is verified complete.
 Subscription observation and citation backfill are completed for ten prompts.
 MCP server stays deferred.
 
@@ -188,7 +188,7 @@ Why 0 decided, and what to change:
 - Done when: the re-import decides the airport count, the free offer and
   live-queue-data sentences as `matched`; the run directory is outside the
   repo or committed under `examples/`, the owner decides which; full suite
-  passes; a PROGRESS.md step records the run id and the before/after counts.
+  passes; a docs/PROGRESS.md step records the run id and the before/after counts.
 
 ### P6. BoardFlight llms.txt wording (other repo: ~/Projects/boardflight)
 
@@ -278,7 +278,7 @@ not new samples. All ten final imports validate; v5 claim ids and verdicts
 remain unchanged at 1 matched, 3 needs_review. Workspaces are finished.
 Personalization and location were not controlled; fresh conversations do not
 prove statistical independence. Source claims were not independently verified.
-See PROGRESS.md Steps 19 to 21 for the observation and recheck history.
+See docs/PROGRESS.md Steps 19 to 21 for the observation and recheck history.
 
 ### P0. API real-data validation (deferred by owner)
 
