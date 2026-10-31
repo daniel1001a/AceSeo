@@ -293,3 +293,305 @@ Real-data scope: one vendor, one model, one repeat, 10 prompts, one site. Nothin
 Open: add OpenAI credit; decide whether inline Markdown links count as citations; first `--repeats 3` run (cap $2 or more) to calibrate thresholds; fixtures keep `encrypted_content`, `signature` and `tool_use_id` (opaque provider values) and need a read before publishing.
 
 Tests: 304 run, OK, 1 skipped (the live replay now runs).
+
+## Step 14: v0.2 spec and P1 packaging (done 2026-10-30)
+
+Files: `SPEC.md`, `pyproject.toml`, `geo/cli.py`, `geo/manual.py`, `.github/workflows/test.yml`, `.gitignore`, `README.md`, `READY_FOR_LIVE.md`, `skills/aceseo/SKILL.md`, `tests/test_adapters.py`, `tests/test_example.py`, `tests/test_live_path.py`.
+
+- `SPEC.md` records decisions D1 to D4 (hybrid claim ledger, solo-developer user, pip plus skill, real data before tuning) and workstreams P0 to P4.
+- `step0` and `step0/data/*.json` are now packaged; `geo/cli.py` finds the data next to `step0`, not via the repo root. Console command `aceseo`.
+- `collect --prompts/--facts` and `import-manual --facts` are required: no BoardFlight default. `--out` and `export-fixtures --dest` are relative to the current directory (same paths as before when run from the repo root).
+- CI: unit tests on Python 3.9 and 3.13, then a wheel installed in a clean venv plans a run from outside the repo.
+
+Verified locally: wheel built with `uv build`, installed into a Python 3.9 venv, `aceseo collect` dry run with `examples/minimal` from a directory outside the repo; missing `--prompts/--facts` gives an argparse error. The CI workflow itself has not run yet.
+
+Tests: 304 run, OK, 1 skipped.
+
+## Step 15: P2 to P4 without API credit (done 2026-10-30)
+
+Files: `geo/{claims,facts,proposals,init,diff,store,validate,runindex,render,cli}.py`, `design/boardflight.facts.sample.json`, `examples/synthetic/`, `tests/test_{declared_match,proposals,init_diff,claims,example}.py`, `README.md`, `SPEC.md`, `skills/aceseo/`.
+
+- Matcher v3 (`claims.MATCHER_VERSION = 3`): built-in topics are `site_status`, `llms.offer.is_free`, `jsonld.organization.same_as`. Any boolean, integer or enum fact can declare a `match` block of literal phrases; `facts.runtime_problems` checks it. The BoardFlight airport-count and live-queue topics moved into the sample facts file; no site-specific pattern is left in the code.
+- P2 on the subscription: `propose-claims` imports proposals written by an assistant outside the tool into `RUN_DIR/proposals.jsonl` (`matcher: "llm"`, `needs_review`). The validator checks that file; decide never reads it. `confirm` adds a phrase to the fact's `match` block in the user's facts file, only when the rules would then decide the sentence. The report and `ledger` list proposals as not counted.
+- P3 `init URL`: two GETs (home, `/llms.txt`), drafts name, hosts, `site_status`, JSON-LD `sameAs` and 6 generic prompts; never overwrites a file.
+- P4 `diff RUN_A RUN_B`: decision numbers as stored (k/n), rule-claim verdict counts per fact, page-check results; refuses on different facts or prompts files unless `--allow-input-change`. Output is byte-stable (tested).
+- SPEC section 6 records where the build differs from the plan and why.
+
+No API call was made. `collect --live` and P0 still need API credit.
+
+Tests: 339 run, OK, 1 skipped.
+
+## Step 16: P5, re-import BoardFlight with declared facts (done 2026-10-30)
+
+Files: `design/boardflight.facts.json` (new), `runs/p5-before/`, `runs/p5-after/` (gitignored, not committed).
+
+- `design/boardflight.facts.json` drafted with `aceseo init https://www.boardflight.com/` and completed by hand: `site_status`, `llms.offer.is_free`, `jsonld.organization.same_as`, plus declared `match` blocks for `llms.coverage.airport_count` and `llms.data.uses_live_queue_data`. `design/boardflight.facts.sample.json` (fixtures depend on it) was not touched.
+- Re-imported `design/manual/chatgpt-app-2026-10-30.answer.txt` twice with `import-manual`, same flags, only the facts file changed.
+  - Before (`design/boardflight.facts.sample.json`, run `run_20261030T164000Z_4a1a4e` under `runs/p5-before/`): 7 claims, 0 matched (6 needs_review, 1 unsupported).
+  - After (`design/boardflight.facts.json`, run `run_20261030T164000Z_4a1a4e` under `runs/p5-after/`): 9 claims, 2 matched directly by the rule matcher (`llms.offer.is_free=true` normalized, `llms.coverage.airport_count=61` exact), 7 needs_review.
+- Step 7 (SKILL.md): wrote two proposals for the remaining undecided sentences (live-queue-data sentence, airport-count table row), imported them with `propose-claims` (both listed, not counted). Tested `confirm` on a scratch copy only; both refused by the tool before any write:
+  - Table row: fails the entity check (`_entity()`), not fixable by a facts-file phrase.
+  - Live-queue-data sentence: collides with the built-in `site_status` topic (`_STATUS_NEG` in `geo/claims.py` matches bare "not live" as a substring), a two-topic hit the matcher always sends to needs_review. Code-level, not a facts-file fix; left as a finding, not acted on.
+  - No facts file was ever written by `confirm`; the real `design/boardflight.facts.json` is unchanged since its initial draft.
+- `runs/p5-before/` and `runs/p5-after/` stay under the gitignored `runs/`, not under `examples/` (that directory holds only the synthetic, deterministic demo checked byte-for-byte by `tests/test_example.py`).
+
+Of the three facts P5 targeted, 2 are now matched directly from this answer; the third (`llms.data.uses_live_queue_data`) stays needs_review for this particular answer, with the root cause above.
+
+Tests: 339 run, OK, 1 skipped.
+
+## Step 17: P6 deployed, flight-lookup fact added (done 2026-10-30)
+
+Files: `design/boardflight.facts.json`.
+
+- P6 merged in the BoardFlight repo as PR #116 (squash commit `2e86470`): the second llms.txt paragraph now says the flight, terminal and departure time are looked up live and the security wait is modeled with no live queue data. Confirmed on the production `/llms.txt` with a plain GET.
+- Added `llms.data.flight_lookup_is_live` = true with a declared boolean `match` block (positive phrases such as "departure time live", "live flight data"; negative phrases such as "no live flight data"). Checked with `match_text`: the production llms.txt sentence is matched, "no live flight data" is contradicted, a sentence that also states the queue-data fact goes to needs_review (two topics). The 2026-10-30 ChatGPT answer predates the change and has no sentence for this fact.
+
+Tests: 339 run, OK, 1 skipped.
+
+## Step 18: API P0 deferred; site-status collision verified (2026-10-31)
+
+Task A (P0) is incomplete. The owner confirmed OpenAI credit and approved the
+dry-run plan: 10 prompts x 3 repeats x anthropic + openai, 60 calls, $1.491
+expected / $1.791 upper estimate, `--cap-usd 2`, current
+`design/boardflight.facts.json`. Key pages: home, /llms.txt, /methodology.
+The live command refused before sending requests or creating a run because
+both `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` were absent from the process
+environment. Run id: none. Actual cost: $0. No fixtures were exported and no
+OpenAI success replay test or `FIELD_STATUS` changes were made: there is no
+new provider response to verify. `FIELD_STATUS` is in `geo/adapters.py`, not
+`geo/facts.py`. All thresholds remain unchanged and provisional because no
+new per-engine n or rates exist. READY_FOR_LIVE.md section 6 records this
+blocker. The owner's subsequent instruction supersedes the API plan: no API
+top-up, subscription services only. P0 API validation is now deferred by scope,
+not waiting for keys. No further paid API calls will be attempted. Subscription
+answers can use `import-manual` and stay excluded from API rates, thresholds
+and field verification. Opened ChatGPT in ego-browser space 2 for this path;
+it was logged out, so the login page is being handed to the owner. No new
+subscription answer has been collected yet.
+
+Task B (owner authorized): `geo/claims.py` no longer reads "not live" followed
+by a word as a site-status negative, except common predicate endings "yet",
+"anymore" and "now". Thus "estimates, not live measurements/data" can match
+its declared data fact without a second site-status topic, while "the site
+is not live" still contradicts. This is a conservative lexical check, not a
+general grammar parser. No site-specific words were added to code.
+`MATCHER_VERSION` bumped from 3 to 4 to distinguish changed claim semantics,
+following SPEC.md's versioned matcher precedent. Two generic regression tests
+cover adjective and predicate uses. Regenerated the deterministic synthetic
+example's claims, decision references and report for the new claim ids.
+The sample facts file was not edited. No commit or push.
+
+Tests: `python3 -m unittest discover -s tests`: 341 run, OK, 1 skipped.
+
+Continuation review (2026-10-31): Task B verified complete without further code
+changes. Full suite rerun: 341 tests, OK, 1 skipped, including the byte-for-byte
+synthetic rebuild test (`run_20261019T210001Z_6f7d91`, synthetic evidence only).
+Saved-answer matcher check remains 9 claims: 2 matched, 7 needs_review. The
+"its security wait times..." sentence still lacks an explicit site mention;
+the entity rule was preserved. The lexical fix may miss site-status predicates
+with following words other than yet/anymore/now; it is not a grammar parser.
+
+The browser tool refused inspection because workspace 2 remains under user
+control after handoff. No login state was verified and no new consumer answer
+was collected. Subscription observation run ids: none. Await owner continuation
+confirmation, then verify login and collect the ten prompts as manual evidence.
+API spend in the refused attempt and continuation: $0. FIELD_STATUS changes:
+none. Threshold decision: unchanged, provisional; manual evidence cannot
+calibrate API thresholds. SPEC section 7 now records this scope separately.
+No commit, push, branch switch or merge; main was not touched.
+
+## Step 19: subscription-only consumer observations (2026-10-31)
+
+The owner confirmed login and authorized continuation. Resumed ego-browser
+workspace 2, verified a logged-in Plus session, and used ten fresh conversations,
+one per prompt in `step0/data/prompts.json`. GPT-6 was selected in the initial
+model menu, Instant effort was visible throughout, and Web search was selected
+before every prompt. The backend model identifier is unknown; the manual CLI
+snapshot keeps model unknown, with the observed menu label in evidence JSON.
+Fresh conversations do not control personalization or location.
+Workspace 2 was finished after saving observations. This supersedes Step 18's
+pending-handoff state. No browser upgrade was performed.
+
+Evidence type: manual consumer browser UI, not API responses. Exact prompts,
+rendered answer text, assistant HTML, observation timestamps, conversation URLs,
+visible citation labels and viewport screenshots are under gitignored
+`runs/subscription-20261031/evidence/`. `import-manual` used the current
+`design/boardflight.facts.json`; every resulting run validated. The three-digit
+browser timestamp fraction was padded to six digits without changing its value.
+`index.json` maps original prompt ids to runs; each run itself uses p_manual.
+
+| Original prompt | Manual run id |
+| --- | --- |
+| p_01 | `run_20261031T124757Z_34c1ce` |
+| p_02 | `run_20261031T124908Z_54ced6` |
+| p_03 | `run_20261031T124922Z_57f67f` |
+| p_04 | `run_20261031T124957Z_08b8e3` |
+| p_05 | `run_20261031T125013Z_0374d0` |
+| p_06 | `run_20261031T125026Z_1e51a3` |
+| p_07 | `run_20261031T125047Z_3cef73` |
+| p_08 | `run_20261031T125055Z_55b712` |
+| p_09 | `run_20261031T125104Z_c1d07f` |
+| p_10 | `run_20261031T125120Z_645e2a` |
+
+Read all ten ledgers, saved as `runs/subscription-20261031/p_*.ledger.md`.
+There are 4 rule claims: 2 matched and 2 needs_review, with no contradicted,
+outdated or unsupported claims. These are ledger counts, not API rates.
+
+- p_09: `clm_chatgpt-web_3a616a2caa104b38` matches airport_count=61 exactly
+  (`fct_e9620e441c918ee7`), with an actual .com link.
+- p_08: `clm_chatgpt-web_4045f4a7b31a3455` mechanically matches free=true
+  (`fct_c48d07d3d8d47a73`), but its surrounding answer is about boardflight.app
+  games. Treat it as an entity false positive requiring human review, not a
+  correct statement about the airport site. The entity rule reads each sentence;
+  this sentence uses only the ambiguous brand. Record retained, code unchanged.
+- p_04: `clm_chatgpt-web_b2f55f3ba51819f6` needs_review: its 61-airport
+  sentence says "Its website" without naming the site.
+- p_10: `clm_chatgpt-web_fdb832d64938a853` needs_review: the status sentence
+  "目前狀態：仍在營運。" lacks an explicit site mention.
+- p_01 to p_03 do not mention BoardFlight. p_05 describes boardflight.app.
+  p_06 describes the .com site as apparently active, and p_07 describes modeled
+  waits/no live security queue data; these produce no rule claim because of
+  current topic phrases and sentence entity checks. No claim is not validation.
+
+Citation limitation: some grouped source-card URLs could not be reliably
+expanded through the UI. Visible labels are preserved, URLs remain explicitly
+unknown, and only shown answer links or successfully opened source-card targets
+were imported. Imported URL counts are incomplete and must not be interpreted
+as citation absence. Screenshots show the viewport, not every part of an answer;
+rendered text and HTML preserve the full captured assistant content.
+
+No proposals or confirmations were made, no declared facts or sample facts were
+changed, and no API fixtures were exported. FIELD_STATUS changes: none.
+Threshold decision: unchanged and provisional; these manual observations cannot
+calibrate API thresholds or verify API fields. Actual added API spend: $0.
+API P0 remains deferred under the owner's subscription-only instruction.
+
+Task B remains verified complete, with the conservative lexical limitation in
+Step 18. Full suite rerun after import: 341 tests, OK, 1 skipped, including the
+byte-for-byte deterministic synthetic rebuild. All ten manual runs validate,
+match the original prompts and saved answer text, and have no page checks or
+decisions. No commit, push, branch switch or merge; main was not touched.
+
+## Step 20: conservative entity guard and saved-evidence recheck (2026-10-31)
+
+The owner asked to finish the remaining work. Fixed p_08's false positive in
+matcher v5: same-name other domains elsewhere in the answer or cited hostnames
+make brand-only statements needs_review. Explicit allowed-host sentences can
+still be decided unless the sentence also names the other entity. No pronoun
+resolution, no site-specific patterns, no facts or phrase changes. Normalize
+spaces/hyphens for same-name host detection; ignore citation paths/titles.
+This deliberately may downgrade correct brand-only statements in comparisons.
+It cannot detect an other entity whose domain is absent from saved evidence.
+
+`geo/proposals.py` confirms against the capture's full answer and citations,
+so a quote cannot bypass the new guard. Synthetic tests cover ambiguity in
+text/citations, contradicted as well as matched values, explicit hosts,
+pronouns, unrelated hosts/URL paths, and refused confirmation without writes.
+No actual proposals or confirmations were made.
+
+Reimported the exact ten Step 19 observations under
+`runs/subscription-20261031/rechecked-v5/`; original `imports/` is intact.
+Run ids are the same ten ids in Step 19, because these are the same observations
+with original observed_at, not ten additional samples. Captures differ only in
+new import created_at; prompts, answers, screenshots and citations are unchanged.
+`index-v5.json` maps original/rechecked directories and new claim ids;
+`p_*.v5.ledger.md` and `summary-v5.md` explain the result.
+
+Current manual ledger total: 4 claims, 1 matched, 3 needs_review. In
+`run_20261031T125055Z_55b712`, former free=true match becomes needs_review
+(`clm_chatgpt-web_a59f8b9c1102a076`) because the actual cited host is .app.
+In `run_20261031T125104Z_c1d07f`, airport_count=61 remains matched
+(`clm_chatgpt-web_6bc0073d442c8daf`). The other two claims retain needs_review;
+no original record was edited. All ten reimports validate as manual and contain
+no decision. These counts do not enter API rates.
+
+Task B remains complete. The October 30 saved answer still gives 9 claims,
+2 matched and 7 needs_review, with its unnamed queue-data sentence undecided.
+Regenerated only the deterministic synthetic claims, decision references and
+report for matcher v5. Full suite: 346 tests, OK, 1 skipped, including the
+byte-for-byte synthetic rebuild check. `git diff --check` passed.
+
+Citation backfill is pending: workspace 2 was finished in Step 19 and is no
+longer in the browser inventory. The ego-browser skill requires one space per
+goal and no bypass through another space, so the owner was asked whether to
+create a replacement space solely to reopen the saved conversations. No new
+space was created and no new question was sent while awaiting that choice.
+Unknown citation URLs remain unknown; no inferred URLs were added.
+
+API spend: $0. FIELD_STATUS changes: none. Threshold decision: unchanged and
+provisional; manual evidence cannot verify API fields or calibrate thresholds.
+API P0 remains deferred by the owner's subscription-only scope. Current facts
+and sample facts untouched. No commit, push, merge or branch switch; main
+untouched. Browser upgrade not performed.
+
+## Step 21: complete citation backfill and final manual imports (2026-10-31)
+
+The owner explicitly allowed a replacement browser workspace. Applied the
+ego-browser skill; created workspace 5, reopened the ten stored conversation
+URLs, and submitted no new prompts or regenerations. Each full rendered answer
+matched the saved answer after normalizing layout whitespace. Cursor position
+surviving navigation had prevented hover entry; moving away before hovering,
+then using keyboard activation and reloading between source cards, resolved
+that UI issue without guessing URLs or reading hidden application state.
+
+All 17 originally saved prose citation groups were expanded, giving 29 opened
+source-card occurrences. Each group's count matched its visible +N label.
+Actual opened source URLs, labels, original observation times and separate later
+backfill timestamps are in `runs/subscription-20261031/citation-backfill/`.
+This resolves the citation limitation and workspace blocker in Steps 19 and 20.
+Workspace 5 was finished; no browser upgrade was performed.
+
+Imported the same saved answers with the union of original shown links and
+backfilled source-card URLs via `import-manual`, current facts, under
+`runs/subscription-20261031/complete-v5/`. Original `imports/`, `rechecked-v5/`
+and all original evidence remain intact. The final run ids are the same ten
+observation ids listed in Step 19, not new samples. `index-final.json` maps all
+versions; `p_*.final.ledger.md` and `summary-final.md` are the current review.
+Original answer observation timestamps are preserved; later citation expansion
+times are supplementary evidence, not falsely assigned to the original capture.
+
+All ten final imports validate as manual with no page checks or decisions.
+Captures differ from the first v5 recheck only in citations and import created_at;
+claim ids/verdicts are unchanged: 4 total, 1 matched, 3 needs_review. The p_08
+privacy citation confirms the answer concerns boardflight.app; its claim remains
+needs_review (`clm_chatgpt-web_a59f8b9c1102a076`,
+`run_20261031T125055Z_55b712`). The 61-airport answer remains matched
+(`clm_chatgpt-web_6bc0073d442c8daf`, `run_20261031T125104Z_c1d07f`).
+These are manual ledger counts, not API rates or decisions. Consumer brand
+confusion remains a finding; the matcher fix prevents a false positive, it does
+not change consumer answers. No real proposals or confirmations were made.
+
+Task B remains complete. Full suite rerun after final import: 346 tests, OK,
+1 skipped, including the byte-for-byte deterministic synthetic rebuild. No
+further code change was needed for citation backfill. `git diff --check` passed.
+API spend: $0. FIELD_STATUS changes: none. Threshold decision: unchanged and
+provisional. Current facts and sample facts untouched. No API fixtures exported.
+API P0 remains deferred by subscription-only scope, not completed by this work.
+No commit, push, merge or branch switch; main untouched. The authorized code,
+manual observations and citation backfill are complete; release actions still
+require the owner's explicit instruction.
+
+## Step 22: release authorization and integration validation (2026-10-31)
+
+The owner explicitly authorized committing, pushing v0.2, creating a pull
+request and merging into main after validation. This supersedes the earlier
+no-commit/no-push/no-merge state; subscription-only and no-paid-API scope remain.
+Task B and the entity guard are separate commits, each with the requested
+ChatGPT co-author trailer. Consumer evidence stays under ignored runs/.
+
+Fetched origin before release: main includes repository-polish changes that
+overlap v0.2 in README, packaging metadata and CI, plus moves the build logs
+to docs/. Integrated those changes on v0.2, retaining packaged step0 data,
+main metadata and the wheel-install smoke test. CI covers Python 3.9, 3.12
+and 3.13. The combined offline suite passed: 346 tests, OK, 1 skipped,
+including the byte-identical synthetic rebuild. Built the wheel, installed it
+in a separate venv and successfully planned a minimal run from outside the
+repository without sending requests. Build succeeded with existing setuptools
+license-metadata deprecation warnings. README and CHANGELOG reflect v0.2.
+The PR records the final CI and merge result. API P0 remains deferred;
+API spend $0, FIELD_STATUS unchanged, thresholds unchanged and provisional.
+
+Release CI follow-up: ubuntu-latest resolved to Ubuntu 26.04 and setup-python
+could not install 3.9, before tests ran. Verified actions/python-versions'
+manifest lists Python 3.9.25 on Ubuntu 22.04 and 24.04; pinned ubuntu-24.04
+to retain minimum-version coverage. No application code changed.

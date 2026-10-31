@@ -14,10 +14,10 @@ records it was computed from.
 
 What makes it different:
 
-- **Official APIs only.** No scraping of consumer apps, no logged-in surfaces.
+- **Official API collector, separate manual observations.**
   An engine is called only if its API terms were read and recorded as allowing
-  this use (`step0/data/engines.json`). Surfaces with no API, such as Google AI
-  Overviews, can be recorded by hand and are kept out of every rate.
+  this use (`step0/data/engines.json`). Consumer surfaces, including ChatGPT and Google AI
+  Overviews, can be recorded by hand and are kept out of every API rate and decision.
 - **Facts come from code and files, not from a model.** A claim is matched to
   a fact by rules (`geo/claims.py`), and the verdict says which rule decided it.
 - **A traceable claim ledger.** Every raw response is stored by its SHA-256.
@@ -31,12 +31,12 @@ What makes it different:
 It does not change your site, does not produce a visibility score, and does not
 need an account anywhere except the API keys you already have.
 
-Status (2026-10-20): the pipeline has run once against real Anthropic API
-responses (`--repeats 1`, one site), covered by tests replaying those
-responses as fixtures. OpenAI has not been verified against a real response
-yet (the account had no credit; see `docs/PROGRESS.md` Step 13). Perplexity is
-still offline-only. Thresholds remain `provisional`. See `docs/READY_FOR_LIVE.md`
-for what is still `unverified` or `Estimated`.
+Status (2026-10-31): Anthropic has one small real API run with replay fixtures.
+OpenAI API success remains unverified and Perplexity is offline-only. The owner
+has selected subscription-only observation; paid API P0 is deferred. Ten manual
+ChatGPT observations and their shown citations were imported separately, with
+no API rates or decisions. Thresholds remain `provisional`; FIELD_STATUS is
+unchanged. See `docs/PROGRESS.md` Steps 19–22 and `docs/READY_FOR_LIVE.md`.
 
 ## Who it's for
 
@@ -79,8 +79,8 @@ reproduced fact contradictions rule. Decision record:
 
 ## Contradicted or outdated claims
 
-- [clm_anthropic_e8f3745417a01eed] is contradicted against fact [fct_56a31299045fdc1c], in capture [cap_anthropic_2b1d0e3b4f85174b]
-- [clm_anthropic_f4528eb01c1d2c09] is contradicted against fact [fct_56a31299045fdc1c], in capture [cap_anthropic_31ffa694bd40ea94]
+- [clm_anthropic_4840677f9b118917] is contradicted against fact [fct_3a18902f276b9006], in capture [cap_anthropic_2b1d0e3b4f85174b]
+- [clm_anthropic_bc527104063c89d4] is contradicted against fact [fct_3a18902f276b9006], in capture [cap_anthropic_31ffa694bd40ea94]
 ...
 ```
 
@@ -95,13 +95,14 @@ git clone https://github.com/daniel1001a/AceSeo.git
 cd AceSeo
 pip install -e .
 python3 -m unittest discover -s tests -q
+
+# Alternative to the editable install: pip install .
 ```
 
-`pip install -e .` adds an `aceseo` command (the same as `python3 -m geo.cli`).
-Use the editable install: the tool reads `step0/data/` and writes `runs/`
-inside the repository, so a plain `pip install .` can render reports but
-cannot plan or run a collection. You can also skip installing and use
-`python3 -m geo.cli` from the repository root.
+`aceseo <command>` and `python3 -m geo.cli <command>` are the same program.
+Both editable and regular installs include the packaged `step0/data/` files;
+run artifacts are written under the current directory's `runs/`. You can also
+use `python3 -m geo.cli` from a clone without installing.
 
 ## See a complete example first
 
@@ -116,9 +117,8 @@ python3 -m geo.cli report examples/synthetic/runs/run_20261019T210001Z_6f7d91
 
 ## Your inputs
 
-You need two files. Templates for a site called "Example Co" are in
-`examples/minimal/`. Without `--prompts` and `--facts` the tool uses the
-BoardFlight files it was built with, which are not about your site.
+You need two files, passed as `--prompts` and `--facts` (both required).
+Templates for a site called "Example Co" are in `examples/minimal/`.
 
 ### prompts.json
 
@@ -159,20 +159,43 @@ hostnames, and a list of facts with unique keys:
 }
 ```
 
-The rule matcher (version 1) compares answers against these fact keys only:
+### Declaring facts
+
+The rule matcher (version 5) decides three topics for any site without
+configuration:
 
 | Fact key | Value | Matches sentences like |
 |---|---|---|
 | `site_status` | `"live"`, `"redirect_only"`, `"error"` or `"unreachable"` | "X is no longer operating", "X is live" |
 | `llms.offer.is_free` | `true` or `false` | "X is free to use", "X requires a paid subscription" |
 | `jsonld.organization.same_as` | list of profile URLs (`[]` for none) | "X has no social media profiles", "X has a GitHub" |
-| `llms.coverage.airport_count` | integer | "X covers 33 US airports" (BoardFlight specific) |
-| `llms.data.uses_live_queue_data` | `true` or `false` | "X uses real-time TSA wait times" (BoardFlight specific) |
+
+Any other boolean, integer or enum fact is decided once you give it a `match`
+block. Phrases are literal text (not regexes), matched case-insensitively on
+word boundaries:
+
+```json
+{"key": "offer.has_api", "value": true, "value_type": "boolean",
+ "match": {"positive": ["has an API"], "negative": ["has no API"]}}
+{"key": "coverage.airport_count", "value": 33, "value_type": "integer",
+ "match": {"subject_terms": ["covers"], "unit_terms": ["airports"]}}
+{"key": "plan.tier", "value": "pro", "value_type": "enum", "enum_values": ["free", "pro"],
+ "match": {"values": {"free": ["free plan"], "pro": ["Pro plan"]}}}
+```
+
+`subject_terms` is optional: when set, a sentence must contain one of them
+before the fact is read. A `match` block on a built-in key replaces the
+built-in. The BoardFlight topics (airport count, live queue data) are declared
+this way in `design/boardflight.facts.sample.json`; no site-specific pattern
+is left in the code.
 
 A sentence is decided only when it names the site (by `site.name` or a host in
 `site.hosts`) and hits exactly one topic. Anything else becomes `needs_review`
-or `unsupported` and is listed in the report, not counted. Other fact keys are
-kept in the run's copy of the facts file but no claim refers to them yet.
+or `unsupported` and is listed in the report, not counted. Same-name other
+domains in the answer or citation hostnames keep brand-only claims under review;
+pronouns do not inherit site identity. Facts with no
+built-in topic and no `match` block are kept in the run's copy of the facts
+file but no claim refers to them.
 
 Add `"prior_values": [{"value": ..., "valid_until": "...", "source": {...}}]`
 to a fact if an old value is still quoted; an answer repeating it is then
@@ -287,9 +310,43 @@ python3 -m geo.cli import-manual ANSWER.txt --surface google-aio \
   --mention-term "Example Co" --facts examples/minimal/facts.json \
   [--screenshot shot.png] [--cite https://www.example.com/]
 python3 -m geo.cli export-fixtures RUN_DIR   # live run -> redacted test fixtures
+python3 -m geo.cli init https://www.example.com --dir mysite   # draft facts.json + prompts.json
+python3 -m geo.cli diff RUN_A RUN_B          # what changed between two runs
+python3 -m geo.cli propose-claims RUN_DIR --from proposals.json
+python3 -m geo.cli confirm RUN_DIR CLAIM_ID --facts F.json --phrase "has an API" --value true
 ```
 
-`import-manual` stores an answer you copied by hand from a surface with no API
+`init` makes two public GET requests (the home page and `/llms.txt`) and
+drafts the site name, hosts, `site_status` and JSON-LD `sameAs`. It never
+guesses facts a person must state; it prints the llms.txt summary so you can
+write them. Existing files are never overwritten.
+
+`diff` compares the stored decision numbers (rates as k/n), rule-claim
+verdicts per fact and page-check results. It refuses when the runs used
+different facts or prompts files unless `--allow-input-change` is given.
+
+### Finding new facts with your Claude subscription (no API credit)
+
+Sentences the rules cannot decide show up as `needs_review`. You can have
+Claude Code (or any assistant on your own subscription) read the run's
+`captures.jsonl` and write a proposals file:
+
+```json
+{"model": "claude (subscription, Claude Code)",
+ "proposals": [{"capture_id": "cap_...", "quote": "exact sentence from the answer",
+                "fact_key": "offer.has_api", "asserted_value": true}]}
+```
+
+`propose-claims` checks every quote is in the answer and stores the proposals
+in `RUN_DIR/proposals.jsonl` with `matcher: "llm"` and verdict
+`needs_review`. The decision never reads that file, so a proposal cannot change
+a number or an outcome; the report lists them under "LLM-proposed claims (not
+counted)". When you agree with one, `confirm` adds a phrase from its sentence
+to the fact's `match` block in your facts file, and only if the rules would
+then decide that sentence. The next run counts it. The `model` field is checked
+but not stored.
+
+`import-manual` stores an answer you copied by hand from a consumer surface
 as its own run. Its claims get evidence ids like any other, but a manual run
 never enters a rate or a decision.
 

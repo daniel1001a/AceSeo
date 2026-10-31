@@ -10,6 +10,7 @@ import unittest
 from geo import cli
 from geo import facts as F
 from geo.canonical import strict_load_path
+from geo import claims as C
 from geo.claims import match_text
 from geo.validate import validate_run
 
@@ -56,7 +57,7 @@ class MinimalInputs(unittest.TestCase):
     def test_facts_pass_runtime_check(self):
         doc = strict_load_path(os.path.join(MINIMAL, "facts.json"))
         self.assertEqual(F.runtime_problems(doc), [])
-        self.assertTrue({f["key"] for f in doc["facts"]} <= set(F.MATCHED_KEYS))
+        self.assertTrue({f["key"] for f in doc["facts"]} <= set(C.matched_keys(doc)))
 
     def test_matcher_reads_minimal_facts(self):
         doc = strict_load_path(os.path.join(MINIMAL, "facts.json"))
@@ -94,7 +95,7 @@ class RuntimeFactsCheck(unittest.TestCase):
                 f.write('{"site": {"name": "X", "hosts": ["x.com"]}, "facts": {}}')
             err = io.StringIO()
             with contextlib.redirect_stderr(err):
-                rc = cli.main(["collect", "--facts", bad, "--cap-usd", "1", "--mention-term", "X"], environ={})
+                rc = cli.main(["collect", "--prompts", os.path.join(MINIMAL, "prompts.json"), "--facts", bad, "--cap-usd", "1", "--mention-term", "X"], environ={})
             self.assertEqual(rc, 2)
             self.assertIn("facts must be a list", err.getvalue())
 

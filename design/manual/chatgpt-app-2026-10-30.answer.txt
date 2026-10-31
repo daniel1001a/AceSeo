@@ -1,0 +1,220 @@
+As of October 30, 2026, BoardFlight (www.boardflight.com) is an active airport-planning website that estimates when a traveler should arrive at a US airport for a particular flight. Its stated purpose is to calculate an airport arrival time based on the flight, terminal, checked baggage, security lane, and expected time needed to reach the gate.
+
+BoardFlight+1
+
+## 1. What is BoardFlight?
+
+BoardFlight is a free flight-arrival planning tool. You enter your flight details, and it works backward from departure to estimate when you should enter the airport.
+
+It models several stages:
+
+- Reaching the check-in area.
+- Checking and dropping off baggage, if applicable.
+- Clearing the relevant security lane.
+- Walking from security to the departure gate.
+- Allowing for the airline's boarding cutoff.
+
+It is not an airline, flight-booking service, or live airport-security tracking service. Its output is a planning estimate, not a guarantee.
+
+BoardFlight+2
+
+## 2. Is www.boardflight.com a legitimate and active website?
+
+Active website
+
+Yes. It appears to be a functioning, genuine service rather than a parked domain or a suspicious imitation website.
+
+Here is the evidence I found:
+
+- The homepage is operational and provides a flight-number search tool.
+- It has dedicated pages for airport coverage, methodology, FAQs, and terms of use.
+- It publishes a contact email: contact@boardflight.com.
+- It has a publicly accessible GitHub repository containing airport security-wait research data.
+- Its website and associated data pages contain 2026 material, including an October 18, 2026 update to its airport wait-time study.
+
+  BoardFlight+4
+
+My assessment: The website appears legitimate in the sense that it offers a functioning product and publishes information about how it works.
+
+However, there are qualifications:
+
+- BoardFlight describes itself as a new, early-stage product.
+- Its published methodology acknowledges that its predictions have not yet been sufficiently calibrated against actual traveler experiences.
+- I could not independently establish a substantial business track record or verify its claims about prediction accuracy.
+
+I would consider it reasonable to try, but I would not treat its arrival estimates as authoritative airport guidance.
+
+BoardFlight+1
+
+## 3. Is BoardFlight free to use, and does it require an account?
+
+Free — no account required
+
+Yes, according to BoardFlight's own website and terms of service:
+
+| Question                                     | Answer                          |
+| -------------------------------------------- | ------------------------------- |
+| Is it free?                                  | Yes                             |
+| Is registration required?                    | No                              |
+| Is an email address required?                | No                              |
+| Is a password required?                      | No                              |
+| Is reporting your actual security wait free? | Yes                             |
+| Does it display advertisements?              | It advertises itself as ad-free |
+
+BoardFlight also states that saved trips are stored in the user's browser rather than on its servers.
+
+BoardFlight+2
+
+Sources: [BoardFlight — How It Works](https://www.boardflight.com/how-it-works?utm_source=chatgpt.com) and [BoardFlight — Terms of Use](https://www.boardflight.com/terms?utm_source=chatgpt.com).
+
+## 4. How many US airports does BoardFlight cover?
+
+61 airports
+
+As of October 30, 2026, BoardFlight lists 61 US airports with individual airport profiles.
+
+Its airport directory includes major airports such as:
+
+| Airport                     | Code |
+| --------------------------- | ---- |
+| Atlanta Hartsfield-Jackson  | ATL  |
+| Boston Logan                | BOS  |
+| Chicago O'Hare              | ORD  |
+| Dallas/Fort Worth           | DFW  |
+| Denver International        | DEN  |
+| Los Angeles International   | LAX  |
+| Miami International         | MIA  |
+| New York JFK                | JFK  |
+| Newark Liberty              | EWR  |
+| San Francisco International | SFO  |
+| Seattle-Tacoma              | SEA  |
+| Washington Dulles           | IAD  |
+
+These are just 12 examples from the 61-airport directory.
+
+BoardFlight+1
+
+An important qualification about coverage:
+
+BoardFlight's methodology breaks down the 61 profiles as follows:
+
+- 54 airports have full terminal-by-terminal profiles.
+- 7 airports have standard profiles, with some source verification dates still outstanding.
+- Airports outside the 61 detailed profiles can still receive an arrival estimate using a more conservative general profile.
+
+There is another important limitation: only 16 of the 61 airports currently pass BoardFlight's published independent check of its hour-by-hour security-demand pattern. The additional 28 airports added since the previous validation run have not yet been scored.
+
+BoardFlight+1
+
+Source: [BoardFlight — All 61 Airports](https://www.boardflight.com/airports?utm_source=chatgpt.com).
+
+## 5. Where does BoardFlight get its airport wait time data from?
+
+This is probably the most important question, because it affects how much confidence travelers should place in its estimates.
+
+BoardFlight does not appear to obtain live TSA security-line wait times directly from airports or TSA. It primarily uses its own modeling based on historical and scheduled information.
+
+According to its published methodology, its information comes from several sources.
+
+A. Airport-specific research
+
+BoardFlight says it researches airport information using publicly available airport terminal guides and related operational information.
+
+This includes information relevant to:
+
+- Terminal layouts.
+- Security checkpoints.
+- Walking distances from security to gates.
+- Check-in and baggage-drop procedures.
+- Airline boarding and check-in deadlines.
+
+It records airport-specific information rather than simply applying one nationwide estimate.
+
+BoardFlight+1
+
+B. Historical and scheduled security-demand modeling
+
+This is particularly important.
+
+BoardFlight has developed its own models to estimate security waiting times according to the airport and time of day.
+
+Its public data repository describes historical-seed hourly security-demand analysis and a separate schedule-derived curve.
+
+These are modeled estimates, not direct measurements of how long passengers are currently standing in line.
+
+GitHub+1
+
+C. TSA published checkpoint throughput data
+
+BoardFlight uses TSA's published hourly checkpoint throughput figures as an independent validation source.
+
+However, there is an important distinction:
+
+- TSA's data helps BoardFlight check whether its model identifies the correct busy and quiet periods.
+- TSA's published throughput figures are not used to establish the actual number of minutes a passenger will wait.
+- BoardFlight explicitly says its estimates are not TSA-published wait times.
+
+  GitHub+1
+
+D. Commercial flight-data provider
+
+BoardFlight also uses an unnamed commercial flight-data provider to identify:
+
+- Flight departure airport.
+- Departure terminal.
+- Scheduled departure time.
+- Whether the flight is domestic or international.
+
+The company does not identify this provider by name in its published methodology.
+
+BoardFlight+1
+
+E. Traveler-submitted reports
+
+BoardFlight allows passengers to report their actual security wait times after flying or while waiting in line.
+
+These reports are intended to improve its estimates over time.
+
+However, BoardFlight acknowledges that it currently has too few reports to calibrate its airport estimates.
+
+BoardFlight+1
+
+### The most important limitation: No live security-line data
+
+BoardFlight explicitly states in its methodology:
+
+- It does not have live airport security queue lengths.
+- It does not have live camera feeds of security checkpoints.
+- Its predictions are based on historical and scheduled patterns.
+- Its traveler-reporting system is still developing.
+
+Consequently, a BoardFlight estimate should not be confused with an actual, real-time TSA checkpoint wait time.
+
+BoardFlight+1
+
+## Overall assessment
+
+| Your question                          | Finding                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 1. What is BoardFlight?                | Airport arrival-time planning tool                                                                      |
+| 2. Is it legitimate and active?        | Appears to be a functioning, early-stage service                                                        |
+| 3. Is it free?                         | Yes, no account required                                                                                |
+| 4. How many airports?                  | 61 individually profiled US airports                                                                    |
+| 5. Where does the wait data come from? | Proprietary historical and scheduled modeling, airport research, and TSA throughput data for validation |
+
+My conclusion: BoardFlight is an interesting airport-planning service, particularly because it attempts to calculate airport arrival times using individual flight and terminal characteristics rather than applying the same two-hour rule to everyone.
+
+However, its security wait times are estimates, not live measurements. Its own methodology also acknowledges limitations in independent validation and traveler-reported calibration. I would use it as an additional planning resource, not as a substitute for airline or airport instructions.
+
+## Primary sources
+
+These are the most useful original sources for verifying the findings:
+
+1. [BoardFlight official website](https://www.boardflight.com/?utm_source=chatgpt.com)
+2. [BoardFlight methodology](https://www.boardflight.com/methodology?utm_source=chatgpt.com)
+3. [BoardFlight airport directory](https://www.boardflight.com/airports?utm_source=chatgpt.com)
+4. [BoardFlight — How It Works and FAQs](https://www.boardflight.com/how-it-works?utm_source=chatgpt.com)
+5. [BoardFlight public airport wait-time dataset on GitHub](https://github.com/daniel1001a/boardflight-airport-wait-data?utm_source=chatgpt.com)
+6. [BoardFlight Terms of Use](https://www.boardflight.com/terms?utm_source=chatgpt.com)
+
+The methodology and public GitHub dataset are particularly valuable because they reveal the distinction between modeled security waits, TSA validation data, and actual live checkpoint measurements.

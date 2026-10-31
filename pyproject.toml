@@ -36,3 +36,6 @@ Changelog = "https://github.com/daniel1001a/AceSeo/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["geo*", "step0*"]
+
+[tool.setuptools.package-data]
+step0 = ["data/*.json"]

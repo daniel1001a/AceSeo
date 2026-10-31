@@ -6,9 +6,14 @@
   ledger RUN_DIR   list the captures and claims of any run, manual runs included
   import-manual    store an answer copied by hand from a surface with no API
   export-fixtures  copy a live run's raw responses (redacted) into test fixtures
+  propose-claims   store LLM-proposed claims beside a run (listed, never counted)
+  confirm          turn a proposed claim into a match rule in your facts file
+  init URL         draft facts.json and prompts.json from a site's public pages
+  diff RUN_A RUN_B compare two runs: rates with n, verdicts, page checks
 
 Only `collect --live` reads API keys (from the environment, only for engines
-that pass the terms gate) and sends requests. Everything else is offline.
+that pass the terms gate) and sends requests to AI engines. `init` fetches
+two public pages of your site (home and /llms.txt). Everything else is offline.
 """
 
 import argparse
@@ -16,7 +21,8 @@ import json
 import os
 import sys
 
-from . import collect, fixtures_export, manual, pipeline, render
+from . import collect, diff, fixtures_export, manual, pipeline, proposals, render
+from . import init as init_mod
 from . import facts as facts_mod
 from . import report as report_mod
 from .canonical import StrictJSONError, canonical_bytes, strict_load_path
@@ -24,23 +30,21 @@ from .fetch import UrllibFetcher
 from .validate import ValidationError, load_valid_run
 from step0 import request_builder
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, "step0", "data")
-SAMPLE_FACTS = os.path.join(ROOT, "design", "boardflight.facts.sample.json")
+DATA = os.path.join(os.path.dirname(os.path.abspath(request_builder.__file__)), "data")
 KEY_ENV = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY",
            "perplexity": "PERPLEXITY_API_KEY"}
 
 
 def _parser():
-    p = argparse.ArgumentParser(prog="geo", description="Evidence-first AI answer checks for one site.")
+    p = argparse.ArgumentParser(prog="aceseo", description="Evidence-first AI answer checks for one site.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     c = sub.add_parser("collect", help="plan (default) or run live (--live)")
     c.add_argument("--engines", default=os.path.join(DATA, "engines.json"))
     c.add_argument("--prices", default=os.path.join(DATA, "prices.json"))
-    c.add_argument("--prompts", default=os.path.join(DATA, "prompts.json"))
-    c.add_argument("--facts", default=SAMPLE_FACTS)
-    c.add_argument("--out", default=os.path.join(ROOT, "runs"), help="runs root directory")
+    c.add_argument("--prompts", required=True, help="prompts.json (see examples/minimal)")
+    c.add_argument("--facts", required=True, help="facts.json (see examples/minimal)")
+    c.add_argument("--out", default="runs", help="runs root directory")
     c.add_argument("--repeats", type=int, default=3)
     c.add_argument("--max-attempts", type=int, default=2)
     c.add_argument("--cap-usd", required=True, help="refuse to start if the Estimated first-attempt cost exceeds this")
@@ -68,17 +72,38 @@ def _parser():
     m.add_argument("--screenshot", help="optional screenshot file, stored byte for byte")
     m.add_argument("--cite", action="append", default=[], help="a source URL the surface showed (repeatable)")
     m.add_argument("--vendor", help="vendor slug (default: first part of --surface)")
-    m.add_argument("--facts", default=SAMPLE_FACTS)
+    m.add_argument("--facts", required=True)
     m.add_argument("--mention-term", action="append", required=True)
-    m.add_argument("--out", default=os.path.join(ROOT, "runs"))
+    m.add_argument("--out", default="runs")
 
     e = sub.add_parser("export-fixtures", help="copy a live run's raw responses into regression fixtures")
     e.add_argument("run_dir")
-    e.add_argument("--dest", default=os.path.join(ROOT, "tests", "fixtures", "live"))
+    e.add_argument("--dest", default=os.path.join("tests", "fixtures", "live"))
+
+    pc = sub.add_parser("propose-claims", help="store LLM-proposed claims beside a run (never counted)")
+    pc.add_argument("run_dir")
+    pc.add_argument("--from", dest="from_file", required=True, help="proposals JSON (see geo/proposals.py)")
+
+    cf = sub.add_parser("confirm", help="turn a proposed claim into a match rule in your facts file")
+    cf.add_argument("run_dir")
+    cf.add_argument("claim_id")
+    cf.add_argument("--facts", required=True, help="your facts.json; edited in place")
+    cf.add_argument("--phrase", required=True, help="words from the claim that assert the value")
+    cf.add_argument("--value", help="boolean: true or false; enum: the value the phrase asserts")
+
+    i = sub.add_parser("init", help="draft facts.json and prompts.json from a site's home page and llms.txt")
+    i.add_argument("url")
+    i.add_argument("--dir", default=".", help="where to write the drafts (existing files are kept)")
+
+    d = sub.add_parser("diff", help="compare two runs: numbers, rule-claim verdicts, page checks")
+    d.add_argument("run_a")
+    d.add_argument("run_b")
+    d.add_argument("--allow-input-change", action="store_true",
+                   help="compare even if the facts or prompts files differ")
     return p
 
 
-def main(argv=None, environ=None, clock=None):
+def main(argv=None, environ=None, clock=None, fetcher=None):
     a = _parser().parse_args(argv)
     env = os.environ if environ is None else environ
     try:
@@ -88,6 +113,16 @@ def main(argv=None, environ=None, clock=None):
             return ledger(a.run_dir)
         if a.cmd == "import-manual":
             return import_manual(a, clock or collect.utc_now)
+        if a.cmd == "propose-claims":
+            return propose_claims(a, clock or collect.utc_now)
+        if a.cmd == "confirm":
+            return confirm(a)
+        if a.cmd == "init":
+            return init_cmd(a, fetcher)
+        if a.cmd == "diff":
+            sys.stdout.write(diff.diff_text(load_valid_run(a.run_a), load_valid_run(a.run_b),
+                                            a.allow_input_change))
+            return 0
         if a.cmd == "export-fixtures":
             entries = fixtures_export.export_fixtures(a.run_dir, a.dest)
             print("wrote %d fixtures and index.json to %s; read them before committing" % (len(entries), a.dest))
@@ -95,10 +130,25 @@ def main(argv=None, environ=None, clock=None):
         return collect_cmd(a, env)
     except (OSError, StrictJSONError, request_builder.ConfigError) as e:
         return _refuse(e)
-    except (collect.CollectError, manual.ManualError, fixtures_export.ExportError, pipeline.PipelineError) as e:
+    except (collect.CollectError, manual.ManualError, fixtures_export.ExportError, pipeline.PipelineError,
+            proposals.ProposalError, init_mod.InitError, diff.DiffError, report_mod.ReportError) as e:
         return _refuse(e)
     except ValidationError as e:
         return _refuse("run does not validate: %s" % e)
+
+
+def init_cmd(a, fetcher=None):
+    facts_doc, prompts_doc, notes = init_mod.draft(a.url, fetcher or UrllibFetcher())
+    for path, written in init_mod.write_drafts(a.dir, facts_doc, prompts_doc):
+        print("%s %s" % ("wrote" if written else "kept existing", path))
+    for n in notes:
+        print("review: %s" % n)
+    host = facts_doc["site"]["hosts"][0]
+    print("next: aceseo collect --facts %s --prompts %s --mention-term %s --mention-term %s "
+          "--key-page %s/ --cap-usd 1" % (os.path.join(a.dir, "facts.json"), os.path.join(a.dir, "prompts.json"),
+                                            json.dumps(facts_doc["site"]["name"]), host,
+                                            facts_doc["site"]["canonical_origin"]), file=sys.stderr)
+    return 0
 
 
 def _refuse(msg):
@@ -204,7 +254,7 @@ def report(run_dir, out):
     try:
         index = load_valid_run(run_dir)
         if index.manifest["run_kind"] == "manual":
-            return _refuse("%s is a manual run; it has no decision. Use: geo ledger %s" % (run_dir, run_dir))
+            return _refuse("%s is a manual run; it has no decision. Use: aceseo ledger %s" % (run_dir, run_dir))
         rep = report_mod.build_report(index, report_mod.latest_decision_id(index))
         if out:
             render.render(rep, index, out)
@@ -250,8 +300,12 @@ def ledger(run_dir):
             lines.append("- %s %s [%s]%s: %s" % (c["id"], c["verdict"], c["verdict_basis"], fact, c["statement"]))
         if not mine and cap["status"] == "ok":
             lines.append("- no claim matched a fact")
+        for c in sorted((c for c in index.proposals if c["capture_id"] == cap["id"]), key=lambda c: c["span_start"]):
+            lines.append("- %s llm proposal, not counted%s: %s" % (
+                c["id"], "" if c["fact_key"] is None else " (fact %s)" % c["fact_key"], c["statement"]))
         lines.append("")
-    lines.append("%d capture(s), %d claim(s)." % (len(caps), len(claims)))
+    lines.append("%d capture(s), %d claim(s)%s." % (
+        len(caps), len(claims), ", %d llm proposal(s)" % len(index.proposals) if index.proposals else ""))
     sys.stdout.write("\n".join(lines) + "\n")
     return 0
 
@@ -271,7 +325,27 @@ def import_manual(a, clock):
         facts_bytes=load_facts(a.facts), mention_terms=a.mention_term,
         observed_at=observed, created_at=clock(), screenshot_bytes=shot, source_urls=a.cite, vendor=a.vendor)
     print(run_dir)
-    print("next: python3 -m geo.cli ledger %s" % run_dir, file=sys.stderr)
+    print("next: aceseo ledger %s" % run_dir, file=sys.stderr)
+    return 0
+
+
+def propose_claims(a, clock):
+    doc = strict_load_path(a.from_file)
+    built = proposals.import_proposals(a.run_dir, doc, clock())
+    for rec, _, cmp in built:
+        print("%s %s: %s" % (rec["id"], rec["fact_key"] or "no fact", rec["statement"]))
+        print("  against the fact: %s" % cmp)
+    print("%d proposal(s) stored in %s; they are listed, never counted." % (
+        len(built), os.path.join(a.run_dir, "proposals.jsonl")))
+    print("next: aceseo confirm %s CLAIM_ID --facts FACTS --phrase TEXT" % a.run_dir, file=sys.stderr)
+    return 0
+
+
+def confirm(a):
+    spec, _ = proposals.confirm_proposal(a.run_dir, a.claim_id, a.facts, a.phrase, a.value)
+    print("added %r to the match block of %s in %s" % (a.phrase, spec.fact_key, a.facts))
+    print("the rule matcher now reads the statement as: %s (%s)" % (spec.verdict, spec.verdict_basis))
+    print("this takes effect in the next run; the existing run is unchanged")
     return 0
 
 

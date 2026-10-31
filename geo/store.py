@@ -17,6 +17,9 @@ from .canonical import canonical_bytes, sha256_hex
 
 RECORD_FILES = {"capture": "captures.jsonl", "page_check": "page_checks.jsonl",
                 "claim": "claims.jsonl", "decision": "decisions.jsonl"}
+# LLM-proposed claims, written after the run by geo/proposals.py. Not a record
+# file: decide never reads it.
+PROPOSALS_FILE = "proposals.jsonl"
 RAW_EXTS = ("json", "html", "txt", "xml", "bin")
 INPUT_FILES = {"prompts_sha256": "prompts.json", "facts_sha256": "facts.json",
                "sources_sha256": "sources.json"}

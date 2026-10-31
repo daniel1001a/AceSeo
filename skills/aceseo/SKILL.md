@@ -32,9 +32,9 @@ Ask for, or read from context:
 
 ## Step 2: Write the two input files
 
-Start from `examples/minimal/prompts.json` and `examples/minimal/facts.json`, copied to a folder of the user's choice. Never run with the default inputs; they describe a different site. Read `references/inputs.md` for the formats, the five fact keys the matcher can decide, and how to write prompts that are fair tests.
+If the site is public, draft both files with `python3 -m geo.cli init https://www.brand.com --dir FOLDER` (two GET requests, no cost), then review every drafted value with the user and add the facts that matter. Otherwise start from `examples/minimal/prompts.json` and `examples/minimal/facts.json`, copied to a folder of the user's choice. Never pass the BoardFlight files in `step0/data/` or `design/`; they describe a different site. Read `references/inputs.md` for the formats, the built-in fact keys, the `match` block for any other fact, and how to write prompts that are fair tests.
 
-Tell the user plainly if what they care about is not one of the five fact keys: the tool will store the fact but no answer will be checked against it yet.
+Tell the user plainly if a fact they care about has neither a built-in topic nor a `match` block: the tool will store it but no answer will be checked against it.
 
 ## Step 3: Plan the run (free)
 
@@ -62,6 +62,17 @@ Read the report file (or `python3 -m geo.cli report RUN_DIR`) and `references/re
 ## Step 6 (optional): Record a surface with no API
 
 For Google AI Overviews and similar, the user copies the answer by hand into a text file and you run `python3 -m geo.cli import-manual` with `--surface`, `--query`, `--observed-at` and the same `--facts` and `--mention-term` values. The result is a separate run whose claims have evidence ids but never enter a rate or a decision. Say so when you report it.
+
+## Step 7 (optional): Propose new match rules on the subscription
+
+This uses the user's Claude subscription through you, not an API key, and costs no API credit.
+
+1. Read `RUN_DIR/captures.jsonl` and the report's `needs_review` claims.
+2. For sentences that state a fact in the facts file, write a proposals file: `{"model": "...", "proposals": [{"capture_id": ..., "quote": <exact sentence>, "fact_key": ..., "asserted_value": ...}]}`. Quote exactly; the tool refuses a quote not in the answer.
+3. Run `python3 -m geo.cli propose-claims RUN_DIR --from FILE`. Proposals are stored beside the run and never counted.
+4. Show the user each proposal with the comparison the tool prints. Only for those the user agrees with, run `python3 -m geo.cli confirm RUN_DIR CLAIM_ID --facts F.json --phrase "<part of the sentence>" [--value true|false|<enum value>]`. It edits the facts file's `match` block; the next run counts it.
+
+Never present a proposal as a verdict. Use `python3 -m geo.cli diff RUN_A RUN_B` to show what changed after a fix or a new run.
 
 ## Output
 

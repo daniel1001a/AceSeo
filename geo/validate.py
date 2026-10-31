@@ -21,7 +21,7 @@ from .records import (ATTACHMENT_ROLES, CAPTURE_STATUSES, ERROR_CLASSES, MANUAL,
                       SKIP_REASONS, TRANSPORTS)
 from .render import BASELINE_ITEMS
 from .runindex import RunIndex
-from .store import FORBIDDEN_HEADER_NAMES, INPUT_FILES, RAW_EXTS, RECORD_FILES
+from .store import FORBIDDEN_HEADER_NAMES, INPUT_FILES, PROPOSALS_FILE, RAW_EXTS, RECORD_FILES
 
 Issue = namedtuple("Issue", "code where message")
 
@@ -104,6 +104,7 @@ class _Run:
         self.facts_doc = None
         self.sources = []
         self.records = []
+        self.proposals = []
 
     def err(self, code, where, msg):
         self.issues.append(Issue(code, where, msg))
@@ -248,28 +249,34 @@ class _Run:
 
     def load_records(self):
         for kind, name in sorted(RECORD_FILES.items()):
+            self.records.extend(self._load_jsonl(kind, name))
+        self.proposals = self._load_jsonl("claim", PROPOSALS_FILE)
+
+    def _load_jsonl(self, kind, name):
+        out = []
+        try:
+            data = self._read(name)
+        except FileNotFoundError:
+            return out
+        lines = data.split(b"\n")
+        if lines and lines[-1] == b"":
+            lines.pop()
+        else:
+            self.err("E_JSON", name, "file does not end with a newline (torn last line)")
+        for n, line in enumerate(lines, 1):
+            where = "%s:%d" % (name, n)
             try:
-                data = self._read(name)
-            except FileNotFoundError:
+                rec = strict_loads(line)
+            except (StrictJSONError, UnicodeDecodeError, ValueError) as e:
+                self.err("E_JSON", where, str(e))
                 continue
-            lines = data.split(b"\n")
-            if lines and lines[-1] == b"":
-                lines.pop()
-            else:
-                self.err("E_JSON", name, "file does not end with a newline (torn last line)")
-            for n, line in enumerate(lines, 1):
-                where = "%s:%d" % (name, n)
-                try:
-                    rec = strict_loads(line)
-                except (StrictJSONError, UnicodeDecodeError, ValueError) as e:
-                    self.err("E_JSON", where, str(e))
-                    continue
-                if not isinstance(rec, dict) or rec.get("kind") != kind:
-                    self.err("E_SCHEMA", where, "kind does not match %s" % name)
-                    continue
-                if canonical_bytes(rec) != line:
-                    self.err("E_JSON", where, "line is not canonical JSON")
-                self.records.append((where, rec))
+            if not isinstance(rec, dict) or rec.get("kind") != kind:
+                self.err("E_SCHEMA", where, "kind does not match %s" % name)
+                continue
+            if canonical_bytes(rec) != line:
+                self.err("E_JSON", where, "line is not canonical JSON")
+            out.append((where, rec))
+        return out
 
     def check_common(self, where, rec, fields):
         m = self.manifest
@@ -295,7 +302,7 @@ class _Run:
     def check_ids(self):
         engines = {r["id"]: r.get("engine") for _, r in self.records if r.get("kind") == "capture"}
         seen = {}
-        for where, rec in self.records:
+        for where, rec in self.records + self.proposals:
             claim_engine = engines.get(rec.get("capture_id")) if rec.get("kind") == "claim" else None
             for p in ids.id_problems(rec, claim_engine):
                 self.err("E_ID_MISMATCH", where, p)
@@ -715,6 +722,12 @@ class _Run:
                 self.check_claim(where, rec, captures, facts)
             else:
                 self.check_decision(where, rec, known)
+        # Proposals (geo/proposals.py) sit beside the run: llm claims only,
+        # never read by decide, so they cannot change a decision.
+        for where, rec in self.proposals:
+            if rec.get("matcher") != "llm":
+                self.err("E_SCHEMA", where, "%s holds only llm claims" % PROPOSALS_FILE)
+            self.check_claim(where, rec, captures, facts)
         self.check_ids()
         self.check_slots()
         self.check_secrets()
@@ -753,4 +766,4 @@ def load_valid_run(run_dir, secrets=(), configured_engines=None, page_registry=N
     issues = r.run()
     if issues:
         raise ValidationError(issues)
-    return RunIndex(r.manifest, [rec for _, rec in r.records], r.aux())
+    return RunIndex(r.manifest, [rec for _, rec in r.records], r.aux(), [rec for _, rec in r.proposals])

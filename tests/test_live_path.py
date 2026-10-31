@@ -17,6 +17,7 @@ import urllib.error
 from geo import cli, decide, fetch, fixtures_export, manual, pipeline
 from geo.canonical import canonical_bytes, strict_load_path
 from geo.collect import FixtureTransport, UrllibTransport
+from geo.facts import SAMPLE_PATH as SAMPLE_FACTS
 from geo.pagechecks import FetchError
 from geo.validate import codes, load_valid_run, validate_run
 from tests import geo_fixtures as fx
@@ -271,6 +272,7 @@ class ManualCli(Tmp):
             f.write(ANSWER)
         rc, out, err = self.cli("import-manual", ans, "--surface", "google-aio", "--query", "boardflight airports",
                                 "--observed-at", "2026-10-20T08:00:00Z", "--mention-term", "BoardFlight",
+                                "--facts", SAMPLE_FACTS,
                                 "--cite", "https://www.boardflight.com/", "--out", os.path.join(self.tmp, "runs"))
         self.assertEqual(rc, 0, err)
         run_dir = out.strip()
@@ -281,11 +283,12 @@ class ManualCli(Tmp):
         self.assertIn("never counted in a rate or a decision", out)
         rc, out, err = self.cli("report", run_dir)
         self.assertEqual((rc, out), (2, ""))
-        self.assertIn("geo ledger", err)
+        self.assertIn("aceseo ledger", err)
 
     def test_missing_answer_file(self):
         rc, _, err = self.cli("import-manual", os.path.join(self.tmp, "nope.txt"), "--surface", "google-aio",
                               "--query", "q", "--observed-at", OBSERVED, "--mention-term", "BoardFlight",
+                              "--facts", SAMPLE_FACTS,
                               "--out", os.path.join(self.tmp, "runs"))
         self.assertEqual(rc, 2)
         self.assertIn("refused", err)
