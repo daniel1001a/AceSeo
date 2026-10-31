@@ -30,6 +30,23 @@ def one(text, doc=DOC):
 
 
 class DeclaredFacts(unittest.TestCase):
+    def test_not_live_adjective_does_not_hit_site_status(self):
+        doc = copy.deepcopy(DOC)
+        doc["facts"].append({
+            "key": "data.uses_live_queue_data", "value": False, "value_type": "boolean",
+            "match": {"positive": [], "negative": ["not live measurements", "not live data"]},
+        })
+        for noun in ("measurements", "data"):
+            text = "Acme Notes security wait times are estimates, not live %s." % noun
+            self.assertEqual(one(text, doc), ("data.uses_live_queue_data", "matched", "normalized"))
+            self.assertEqual(C.match_text(text, DOC), [])
+
+    def test_not_live_predicate_still_contradicts(self):
+        for text in ("The Acme Notes site is not live.", "Acme Notes is not live",
+                     "Acme Notes is not live yet.", "Acme Notes is not live anymore.",
+                     "Acme Notes is not live now."):
+            self.assertEqual(one(text), ("site_status", "contradicted", "value_mismatch"), text)
+
     def test_boolean(self):
         self.assertEqual(one("Acme Notes has a public API."), ("offer.has_api", "matched", "normalized"))
         self.assertEqual(one("Acme Notes has no API."), ("offer.has_api", "contradicted", "value_mismatch"))

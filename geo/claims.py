@@ -24,7 +24,8 @@ MATCHER = "rule"
 # ("covers **33 US airports**"), which v1 read as no value.
 # v3: no site-specific patterns. Besides the three built-in topics, a fact is
 # matched only through the "match" block declared in the facts file.
-MATCHER_VERSION = 3
+# v4: "not live" before a noun is an adjective, not a site-status claim.
+MATCHER_VERSION = 4
 MATCHERS = ("rule", "llm")
 
 VERDICT_BASES = {
@@ -54,9 +55,12 @@ _DOMAIN = re.compile(r"(?<![A-Za-z0-9.-])((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})(?![A
 
 # --- topics ------------------------------------------------------------------
 
+# A following word makes "not live" potentially adjectival ("not live data").
+# Keep the common predicate endings "yet", "anymore" and "now".
 _STATUS_NEG = re.compile(
     r"\b(?:inactive|defunct|parked|offline|abandoned|shut\s+down|no\s+longer\s+(?:operating|active|available|online|"
-    r"maintained)|not\s+(?:operating|active|operational|live|online|available)|is\s+(?:currently\s+)?down|"
+    r"maintained)|not\s+(?:operating|active|operational|online|available)|"
+    r"not\s+live\b(?!\s+(?!(?:yet|anymore|now)\b)[A-Za-z])|is\s+(?:currently\s+)?down|"
     r"no\s+active\s+(?:live\s+)?service)\b"
     r"|已停用|停止營運|停止运营|已關閉|已关闭|沒有在營運|没有在运营|不再營運|不再运营|已失效|無法使用|无法使用", _I)
 _STATUS_POS = re.compile(
