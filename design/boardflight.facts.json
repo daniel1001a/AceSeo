@@ -46,6 +46,15 @@
         "positive": [],
         "negative": ["no live queue data", "not live measurements", "no real-time checkpoint queue lengths"]
       }
+    },
+    {
+      "key": "llms.data.flight_lookup_is_live",
+      "value": true,
+      "value_type": "boolean",
+      "match": {
+        "positive": ["departure time live", "looks up the flight live", "live flight lookup", "live flight data", "live flight status", "real-time flight data", "real-time flight status"],
+        "negative": ["no live flight data", "no real-time flight data", "does not look up flights live"]
+      }
     }
   ]
 }

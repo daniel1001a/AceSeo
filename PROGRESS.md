@@ -338,3 +338,12 @@ Files: `design/boardflight.facts.json` (new), `runs/p5-before/`, `runs/p5-after/
 Of the three facts P5 targeted, 2 are now matched directly from this answer; the third (`llms.data.uses_live_queue_data`) stays needs_review for this particular answer, with the root cause above.
 
 Tests: 339 run, OK, 1 skipped.
+
+## Step 17: P6 deployed, flight-lookup fact added (done 2026-10-30)
+
+Files: `design/boardflight.facts.json`.
+
+- P6 merged in the BoardFlight repo as PR #116 (squash commit `2e86470`): the second llms.txt paragraph now says the flight, terminal and departure time are looked up live and the security wait is modeled with no live queue data. Confirmed on the production `/llms.txt` with a plain GET.
+- Added `llms.data.flight_lookup_is_live` = true with a declared boolean `match` block (positive phrases such as "departure time live", "live flight data"; negative phrases such as "no live flight data"). Checked with `match_text`: the production llms.txt sentence is matched, "no live flight data" is contradicted, a sentence that also states the queue-data fact goes to needs_review (two topics). The 2026-10-30 ChatGPT answer predates the change and has no sentence for this fact.
+
+Tests: 339 run, OK, 1 skipped.
