@@ -590,3 +590,8 @@ repository without sending requests. Build succeeded with existing setuptools
 license-metadata deprecation warnings. README and CHANGELOG reflect v0.2.
 The PR records the final CI and merge result. API P0 remains deferred;
 API spend $0, FIELD_STATUS unchanged, thresholds unchanged and provisional.
+
+Release CI follow-up: ubuntu-latest resolved to Ubuntu 26.04 and setup-python
+could not install 3.9, before tests ran. Verified actions/python-versions'
+manifest lists Python 3.9.25 on Ubuntu 22.04 and 24.04; pinned ubuntu-24.04
+to retain minimum-version coverage. No application code changed.

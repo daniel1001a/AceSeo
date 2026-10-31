@@ -11,7 +11,8 @@ All notable changes are listed here. Releases are on the
   domains under review, including proposal confirmation context.
 - Subscription observations remain manual evidence outside API rates/decisions;
   paid API P0 deferred, FIELD_STATUS and provisional thresholds unchanged.
-- CI additionally checks Python 3.13 and wheel installation outside the repo.
+- CI additionally checks Python 3.13 and wheel installation outside the repo,
+  with Ubuntu 24.04 pinned for Python 3.9 availability.
 
 - Packaging: `aceseo` console command (`geo.cli:main`), project metadata
   (authors, keywords, classifiers, URLs), `step0` included in the package,
