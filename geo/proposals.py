@@ -177,7 +177,11 @@ def confirm_proposal(run_dir, claim_id, facts_path, phrase, value=None):
     problems = facts_mod.runtime_problems(doc)
     if problems:
         raise ProposalError("the new match block is refused: %s" % "; ".join(problems))
-    specs = [s for s in match_text(rec["statement"], doc) if s.fact_key == rec["fact_key"]]
+    cap = next(c for c in index.of_kind("capture") if c["id"] == rec["capture_id"])
+    specs = [s for s in match_text(rec["statement"], doc,
+                                  context_text=cap["answer_text"],
+                                  source_urls=[c["url"] for c in cap["citations"]])
+             if s.fact_key == rec["fact_key"]]
     if not specs:
         raise ProposalError("with that phrase the rule matcher still does not decide %r for %s; "
                             "the statement must also name the site and the phrase must cover the value"

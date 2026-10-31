@@ -137,6 +137,16 @@ class Import(ProposalCase):
 
 
 class Confirm(ProposalCase):
+    def test_same_name_citation_cannot_be_bypassed_by_confirm(self):
+        self.cap = self.run.add_capture("anthropic", "p_01", 1,
+                                       hosts=("acmenotes.app",), answer_text=ANSWER)
+        self.created = self.run.tick()
+        [(rec, _, _)] = self.propose()
+        with self.assertRaisesRegex(proposals.ProposalError, "still does not decide"):
+            proposals.confirm_proposal(self.dir, rec["id"], self.facts_path, "ships an export API", "true")
+        with open(self.facts_path) as f:
+            self.assertEqual(json.load(f), ACME)
+
     def test_boolean_phrase_becomes_a_rule(self):
         [(rec, _, _)] = self.propose()
         self.assertEqual([s for s in match_text(QUOTE, ACME) if s.fact_key], [])

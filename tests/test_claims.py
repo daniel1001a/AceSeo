@@ -256,8 +256,8 @@ class LoaderFactsRun(ClaimRun):
 
     def test_outdated_and_list_snapshot_validate(self):
         cap = self.run.add_capture("openai", "p_04", 0, answer_text=(
-            "BoardFlight has no social media profiles. BoardFlight is free to use. "
-            "boardflight.app is inactive. BoardFlight was founded in 2024."))
+            "boardflight.com has no social media profiles. boardflight.com is free to use. "
+            "boardflight.app is inactive. boardflight.com was founded in 2024."))
         recs = C.claims_for_capture(self.run.manifest, cap, self.run.facts_doc, self.run.tick())
         self.assertEqual([r["verdict"] for r in recs], ["outdated", "matched", "needs_review", "unsupported"])
         self.assertIsInstance(recs[0]["fact_value_snapshot"], list)

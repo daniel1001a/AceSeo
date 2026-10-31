@@ -30,6 +30,32 @@ def one(text, doc=DOC):
 
 
 class DeclaredFacts(unittest.TestCase):
+    def test_same_name_domain_elsewhere_downgrades_brand_only_claim(self):
+        for text in ("Acme Notes has a public API. See acmenotes.app.",
+                     "Website: acmenotes.app\nAcme Notes has a public API."):
+            [sp] = C.match_text(text, DOC)
+            self.assertEqual((sp.fact_key, sp.verdict), (None, "needs_review"))
+            self.assertEqual(text[sp.span_start:sp.span_end], "Acme Notes has a public API.")
+
+    def test_same_name_citation_downgrades_brand_only_claim(self):
+        for text in ("Acme Notes has a public API.", "Acme Notes has no API."):
+            [sp] = C.match_text(text, DOC, source_urls=["https://acmenotes.app/privacy"])
+            self.assertEqual((sp.fact_key, sp.verdict), (None, "needs_review"))
+
+    def test_explicit_host_can_disambiguate_but_pronoun_cannot(self):
+        urls = ["https://acmenotes.app/"]
+        [sp] = C.match_text("acmenotes.io has a public API.", DOC, source_urls=urls)
+        self.assertEqual((sp.fact_key, sp.verdict), ("offer.has_api", "matched"))
+        [sp] = C.match_text("acmenotes.io and acmenotes.app have a public API.", DOC)
+        self.assertEqual((sp.fact_key, sp.verdict), (None, "needs_review"))
+        [sp] = C.match_text("It has a public API.", DOC, context_text="Acme Notes has a public API.")
+        self.assertEqual((sp.fact_key, sp.verdict), (None, "needs_review"))
+
+    def test_citation_path_or_unrelated_host_does_not_confuse_entity(self):
+        for url in ("https://docs.example/acmenotes.app", "https://acmenotes.io/", "https://example.org/"):
+            [sp] = C.match_text("Acme Notes has a public API.", DOC, source_urls=[url])
+            self.assertEqual((sp.fact_key, sp.verdict), ("offer.has_api", "matched"))
+
     def test_not_live_adjective_does_not_hit_site_status(self):
         doc = copy.deepcopy(DOC)
         doc["facts"].append({

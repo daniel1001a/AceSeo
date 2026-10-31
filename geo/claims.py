@@ -13,6 +13,7 @@ Digit classes are [0-9], never \\d (W4 F14).
 
 import re
 from collections import namedtuple
+from urllib.parse import urlsplit
 
 from . import SCHEMA_VERSION, ids
 from .facts import facts_by_key
@@ -25,7 +26,8 @@ MATCHER = "rule"
 # v3: no site-specific patterns. Besides the three built-in topics, a fact is
 # matched only through the "match" block declared in the facts file.
 # v4: "not live" before a noun is an adjective, not a site-status claim.
-MATCHER_VERSION = 4
+# v5: same-name domains in answer/citations make brand-only claims ambiguous.
+MATCHER_VERSION = 5
 MATCHERS = ("rule", "llm")
 
 VERDICT_BASES = {
@@ -237,7 +239,7 @@ def _entity(sentence, site):
     """site, other (a different domain that shares the site name) or none."""
     hosts = {h.lower() for h in site.get("hosts", ())}
     name = site.get("name") or ""
-    stem = name.lower()
+    stem = re.sub(r"[\s-]+", "", name.lower())
     mentions_site = other = False
     covered = []
     for m in _DOMAIN.finditer(sentence):
@@ -245,7 +247,7 @@ def _entity(sentence, site):
         covered.append(m.span())
         if host in hosts:
             mentions_site = True
-        elif stem and stem in host:
+        elif stem and stem in host.replace("-", ""):
             other = True
     if name:
         for m in re.finditer(r"\b%s\b" % re.escape(name), sentence, _I):
@@ -293,11 +295,20 @@ def _decide(topic, fact, asserted):
     return ("contradicted", "value_mismatch")
 
 
-def match_text(text, facts_doc):
-    """Return one Spec per claim-bearing sentence of text, in text order."""
+def match_text(text, facts_doc, *, source_urls=(), context_text=None):
+    """Return one Spec per claim-bearing sentence, preserving original spans.
+
+    Context can only downgrade brand-only claims, never supply a missing entity.
+    context_text lets proposal confirmation retain the full capture's context.
+    """
     site = facts_doc.get("site") or {}
     facts = facts_by_key(facts_doc)
     topics = topics_for(facts_doc)
+    hosts = {h.lower() for h in site.get("hosts", ())}
+    context = text if context_text is None else context_text
+    # Citation paths/titles are not entity domains; only their hostnames count.
+    context += "\n" + "\n".join(urlsplit(u).hostname or "" for u in source_urls)
+    ambiguous_brand = _entity(_MARKUP.sub("", context), site) == "other"
     out = []
     for s, e in sentences(text):
         sent = _MARKUP.sub("", text[s:e])
@@ -307,6 +318,9 @@ def match_text(text, facts_doc):
         if not hits and not no_fact:
             continue
         entity = _entity(sent, site)
+        explicit_host = any(m.group(1).lower().rstrip(".") in hosts for m in _DOMAIN.finditer(sent))
+        if ambiguous_brand and not explicit_host:
+            entity = "other"
         if len(hits) + int(no_fact) > 1 or entity != "site":
             topic = hits[0][0] if len(hits) == 1 and not no_fact else None
             out.append(Spec(s, e, topic, None, "needs_review", "undecided"))
@@ -363,7 +377,7 @@ def claims_for_capture(manifest, capture, facts_doc, created_at):
     text = capture.get("answer_text") or ""
     facts = facts_by_key(facts_doc)
     out = []
-    for sp in match_text(text, facts_doc):
+    for sp in match_text(text, facts_doc, source_urls=[c["url"] for c in capture.get("citations", ())]):
         out.append(claim_record(
             manifest, capture, span_start=sp.span_start, span_end=sp.span_end,
             statement=text[sp.span_start:sp.span_end], fact_key=sp.fact_key,
